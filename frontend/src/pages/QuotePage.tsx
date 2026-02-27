@@ -1,225 +1,267 @@
-/**
- * Quotes collection page with add/edit/delete, favorite toggle, and random quote display.
- * Primary CTA buttons use the accent color. Timestamps shown in "DD MMM YYYY, h:mm A" format.
- */
-import React, { useState } from 'react';
-import { useDataStore, Quote } from '../store/dataStore';
-import { formatDateTime } from '../utils/formatDateTime';
-import { Plus, Trash2, Heart, X, Quote as QuoteIcon, Shuffle } from 'lucide-react';
-import { toast } from 'sonner';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Shuffle, Calendar, Save, Plus, Trash2 } from 'lucide-react';
+import { useQuote } from '../hooks/useQuote';
+import type { QuoteData } from '../db/schema';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
 
-export default function QuotePage() {
-  const { quotes, addQuote, updateQuote, deleteQuote } = useDataStore();
-  const [showForm, setShowForm] = useState(false);
-  const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
-  const [filter, setFilter] = useState<'all' | 'favorites'>('all');
-  const [featured, setFeatured] = useState<Quote | null>(
-    quotes.length > 0 ? quotes[Math.floor(Math.random() * quotes.length)] : null
-  );
-  const [form, setForm] = useState({ text: '', author: '' });
+interface QuotePageProps {
+  onBack: () => void;
+}
 
-  const filtered = filter === 'favorites' ? quotes.filter((q) => q.isFavorite) : quotes;
+const FONT_OPTIONS = ['Inter', 'Poppins', 'Roboto', 'Open Sans', 'Georgia', 'serif'];
 
-  const resetForm = () => {
-    setForm({ text: '', author: '' });
-    setEditingQuote(null);
-    setShowForm(false);
-  };
+export function QuotePage({ onBack }: QuotePageProps) {
+  const { quote, loading, saveQuote } = useQuote();
+  const [text, setText] = useState('');
+  const [author, setAuthor] = useState('');
+  const [alignment, setAlignment] = useState<'left' | 'center' | 'right'>('center');
+  const [fontFamily, setFontFamily] = useState('Inter');
+  const [fontSize, setFontSize] = useState(20);
+  const [fontColor, setFontColor] = useState('#1e293b');
+  const [backgroundBlur, setBackgroundBlur] = useState(false);
+  const [rotateMode, setRotateMode] = useState<'none' | 'shuffle' | 'daily'>('none');
+  const [quoteList, setQuoteList] = useState<Array<{ text: string; author?: string }>>([]);
+  const [newQuoteText, setNewQuoteText] = useState('');
+  const [newQuoteAuthor, setNewQuoteAuthor] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.text.trim()) {
-      toast.error('Quote text is required');
-      return;
+  useEffect(() => {
+    if (quote) {
+      setText(quote.text);
+      setAuthor(quote.author || '');
+      setAlignment(quote.alignment);
+      setFontFamily(quote.fontFamily);
+      setFontSize(quote.fontSize);
+      setFontColor(quote.fontColor);
+      setBackgroundBlur(quote.backgroundBlur);
+      setRotateMode(quote.rotateMode);
+      setQuoteList(quote.quoteList);
     }
-    if (editingQuote) {
-      updateQuote(editingQuote.id, form);
-      toast.success('Quote updated');
-    } else {
-      addQuote({ ...form, isFavorite: false });
-      toast.success('Quote saved');
-    }
-    resetForm();
+  }, [quote]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const updated: QuoteData = {
+      ...(quote || {}),
+      text,
+      author: author || undefined,
+      alignment,
+      fontFamily,
+      fontSize,
+      fontColor,
+      backgroundBlur,
+      isActive: true,
+      rotateMode,
+      quoteList,
+      lastRotated: quote?.lastRotated || Date.now(),
+    };
+    await saveQuote(updated);
+    setSaving(false);
   };
 
-  const handleEdit = (quote: Quote) => {
-    setForm({ text: quote.text, author: quote.author });
-    setEditingQuote(quote);
-    setShowForm(true);
+  const addToList = () => {
+    if (!newQuoteText.trim()) return;
+    setQuoteList(prev => [...prev, { text: newQuoteText.trim(), author: newQuoteAuthor.trim() || undefined }]);
+    setNewQuoteText('');
+    setNewQuoteAuthor('');
   };
 
-  const handleShuffle = () => {
-    if (quotes.length === 0) return;
-    const random = quotes[Math.floor(Math.random() * quotes.length)];
-    setFeatured(random);
+  const removeFromList = (idx: number) => {
+    setQuoteList(prev => prev.filter((_, i) => i !== idx));
   };
+
+  if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Quotes</h1>
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all"
-          style={{ background: 'var(--accent)', color: 'var(--accent-text, #1a1a1a)' }}
-        >
-          <Plus className="w-4 h-4" />
-          Add Quote
+    <div className="p-4 max-w-lg mx-auto">
+      <div className="flex items-center gap-3 mb-6">
+        <button onClick={onBack} className="p-2 rounded-lg hover:bg-muted transition-colors" aria-label="Go back">
+          <ArrowLeft className="w-4 h-4" />
         </button>
+        <h1 className="text-xl font-bold">Quote & Motivation</h1>
       </div>
 
-      {/* Featured Quote */}
-      {featured && (
-        <div
-          className="rounded-2xl p-6 relative"
-          style={{
-            background: 'linear-gradient(135deg, var(--accent-soft), transparent)',
-            border: '1px solid var(--accent)',
-          }}
+      {/* Live Preview */}
+      <div
+        className={`rounded-2xl border border-border/50 p-6 mb-4 min-h-[120px] flex flex-col items-center justify-center ${backgroundBlur ? 'backdrop-blur-sm bg-card/80' : 'bg-card'}`}
+        style={{ textAlign: alignment }}
+      >
+        <p
+          className="italic leading-relaxed"
+          style={{ fontFamily, fontSize: `${fontSize}px`, color: fontColor }}
         >
-          <QuoteIcon className="w-8 h-8 mb-3 opacity-40" style={{ color: 'var(--accent)' }} />
-          <p className="text-lg font-medium italic leading-relaxed">"{featured.text}"</p>
-          {featured.author && (
-            <p className="text-sm text-muted-foreground mt-2">— {featured.author}</p>
-          )}
-          <button
-            onClick={handleShuffle}
-            className="absolute top-4 right-4 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-          >
-            <Shuffle className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-          </button>
-        </div>
-      )}
-
-      {/* Add/Edit Form */}
-      {showForm && (
-        <div className="bg-card rounded-xl border border-border/50 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">{editingQuote ? 'Edit Quote' : 'New Quote'}</h3>
-            <button onClick={resetForm} className="p-1 hover:bg-muted/50 rounded">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                Quote *
-              </label>
-              <textarea
-                value={form.text}
-                onChange={(e) => setForm({ ...form, text: e.target.value })}
-                placeholder="Enter quote text..."
-                rows={3}
-                className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 resize-none"
-                style={{ '--tw-ring-color': 'var(--accent)' } as React.CSSProperties}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Author</label>
-              <input
-                value={form.author}
-                onChange={(e) => setForm({ ...form, author: e.target.value })}
-                placeholder="e.g. Mark Twain"
-                className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
-                style={{ '--tw-ring-color': 'var(--accent)' } as React.CSSProperties}
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
-              <button
-                type="button"
-                onClick={resetForm}
-                className="px-4 py-2 rounded-lg text-sm border border-border/50 hover:bg-muted/50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                style={{ background: 'var(--accent)', color: 'var(--accent-text, #1a1a1a)' }}
-              >
-                {editingQuote ? 'Update' : 'Save Quote'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Filter */}
-      <div className="flex gap-2">
-        {(['all', 'favorites'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className="px-4 py-1.5 rounded-full text-sm font-medium transition-all border"
-            style={
-              filter === f
-                ? {
-                    background: 'var(--accent-soft)',
-                    borderColor: 'var(--accent)',
-                    color: 'var(--accent)',
-                  }
-                : { borderColor: 'var(--border)', color: 'var(--muted-foreground)' }
-            }
-          >
-            {f === 'all' ? 'All' : '❤️ Favorites'}
-          </button>
-        ))}
+          "{text || 'Your quote will appear here...'}"
+        </p>
+        {author && (
+          <p className="text-sm text-muted-foreground mt-2 not-italic" style={{ fontFamily }}>
+            — {author}
+          </p>
+        )}
       </div>
 
-      {/* Quotes List */}
-      {filtered.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <QuoteIcon className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">No quotes yet</p>
-          <p className="text-sm">Add your favorite quotes!</p>
+      {/* Editor */}
+      <div className="bg-card rounded-xl border border-border/50 p-4 space-y-4 mb-4">
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Quote Text</label>
+          <textarea
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Enter your quote..."
+            className="w-full bg-muted/50 rounded-lg p-3 text-sm outline-none resize-none min-h-[80px] border border-border/50 focus:border-primary transition-colors"
+            aria-label="Quote text"
+          />
         </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map((quote) => (
-            <div
-              key={quote.id}
-              className="bg-card rounded-xl border border-border/50 p-4"
-            >
-              <p className="italic text-sm leading-relaxed">"{quote.text}"</p>
-              {quote.author && (
-                <p className="text-xs text-muted-foreground mt-1">— {quote.author}</p>
-              )}
-              <div className="flex items-center justify-between mt-3">
-                <span className="text-[10px] text-muted-foreground">
-                  {formatDateTime(quote.createdAt)}
-                </span>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => updateQuote(quote.id, { isFavorite: !quote.isFavorite })}
-                    className="p-1.5 rounded-lg transition-colors"
-                    style={quote.isFavorite ? { color: 'var(--accent)' } : {}}
-                  >
-                    <Heart
-                      className="w-4 h-4"
-                      fill={quote.isFavorite ? 'var(--accent)' : 'none'}
-                    />
-                  </button>
-                  <button
-                    onClick={() => handleEdit(quote)}
-                    className="p-1.5 hover:bg-muted/50 rounded-lg transition-colors text-muted-foreground"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={() => {
-                      deleteQuote(quote.id);
-                      toast.success('Quote deleted');
-                    }}
-                    className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                  </button>
-                </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Author (optional)</label>
+          <Input value={author} onChange={e => setAuthor(e.target.value)} placeholder="Author name" aria-label="Author" />
+        </div>
+
+        {/* Alignment */}
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Alignment</label>
+          <div className="flex gap-2">
+            {(['left', 'center', 'right'] as const).map(a => (
+              <button
+                key={a}
+                onClick={() => setAlignment(a)}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-colors capitalize
+                  ${alignment === a ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-muted'}`}
+                aria-label={`Align ${a}`}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Font */}
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Font Family</label>
+          <select
+            value={fontFamily}
+            onChange={e => setFontFamily(e.target.value)}
+            className="w-full bg-muted/50 rounded-lg p-2 text-sm border border-border/50 outline-none"
+            aria-label="Font family"
+          >
+            {FONT_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
+        </div>
+
+        {/* Font size */}
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Font Size: {fontSize}px</label>
+          <Slider
+            value={[fontSize]}
+            onValueChange={([v]) => setFontSize(v)}
+            min={12}
+            max={36}
+            step={1}
+            aria-label="Font size"
+          />
+        </div>
+
+        {/* Font color */}
+        <div className="flex items-center gap-3">
+          <label className="text-xs font-medium text-muted-foreground">Font Color</label>
+          <input
+            type="color"
+            value={fontColor}
+            onChange={e => setFontColor(e.target.value)}
+            className="w-8 h-8 rounded cursor-pointer border border-border"
+            aria-label="Font color"
+          />
+          <span className="text-xs text-muted-foreground">{fontColor}</span>
+        </div>
+
+        {/* Background blur */}
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-medium text-muted-foreground">Background Blur</label>
+          <button
+            onClick={() => setBackgroundBlur(!backgroundBlur)}
+            className={`w-10 h-5 rounded-full transition-colors ${backgroundBlur ? 'bg-primary' : 'bg-muted'}`}
+            role="switch"
+            aria-checked={backgroundBlur}
+            aria-label="Toggle background blur"
+          >
+            <span className={`block w-4 h-4 rounded-full bg-white shadow transition-transform mx-0.5 ${backgroundBlur ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
+        </div>
+
+        {/* Rotate mode */}
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Rotation Mode</label>
+          <div className="flex gap-2">
+            {([
+              { value: 'none', label: 'None', icon: null },
+              { value: 'shuffle', label: 'Shuffle', icon: Shuffle },
+              { value: 'daily', label: 'Daily', icon: Calendar },
+            ] as const).map(({ value, label, icon: Icon }) => (
+              <button
+                key={value}
+                onClick={() => setRotateMode(value)}
+                className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium border transition-colors
+                  ${rotateMode === value ? 'bg-primary text-primary-foreground border-primary' : 'border-border hover:bg-muted'}`}
+                aria-label={`Set rotation to ${label}`}
+              >
+                {Icon && <Icon className="w-3 h-3" />}
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Quote list */}
+      <div className="bg-card rounded-xl border border-border/50 p-4 mb-4">
+        <h3 className="text-sm font-semibold mb-3">Quote Library ({quoteList.length})</h3>
+        <div className="space-y-2 mb-3 max-h-48 overflow-y-auto">
+          {quoteList.map((q, idx) => (
+            <div key={idx} className="flex items-start gap-2 p-2 bg-muted/50 rounded-lg">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs line-clamp-2">"{q.text}"</p>
+                {q.author && <p className="text-[10px] text-muted-foreground">— {q.author}</p>}
               </div>
+              <button
+                onClick={() => removeFromList(idx)}
+                className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                aria-label={`Remove quote: ${q.text}`}
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
             </div>
           ))}
         </div>
-      )}
+        <div className="space-y-2">
+          <textarea
+            value={newQuoteText}
+            onChange={e => setNewQuoteText(e.target.value)}
+            placeholder="Add a quote to the library..."
+            className="w-full bg-muted/50 rounded-lg p-2 text-xs outline-none resize-none border border-border/50 focus:border-primary transition-colors"
+            rows={2}
+            aria-label="New quote text"
+          />
+          <div className="flex gap-2">
+            <Input
+              value={newQuoteAuthor}
+              onChange={e => setNewQuoteAuthor(e.target.value)}
+              placeholder="Author (optional)"
+              className="text-xs h-8"
+              aria-label="New quote author"
+            />
+            <Button onClick={addToList} size="sm" className="h-8 gap-1" aria-label="Add quote to library">
+              <Plus className="w-3 h-3" /> Add
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <Button onClick={handleSave} disabled={saving} className="w-full gap-2" aria-label="Save quote settings">
+        <Save className="w-4 h-4" />
+        {saving ? 'Saving...' : 'Save Quote'}
+      </Button>
     </div>
   );
 }

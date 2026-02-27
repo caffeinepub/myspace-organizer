@@ -1,314 +1,370 @@
-/**
- * Settings page for theme (dark/light), accent color (gold presets), font size,
- * data export/import, and clear all data. Gold accent presets default to #D4AF37.
- * Export/import messages include formatted timestamps.
- */
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
+import { Moon, Sun, Palette, Type, HardDrive, Download, Upload, Trash2, AlertTriangle, Image } from 'lucide-react';
 import { useAppStore } from '../store/appStore';
-import { useDataStore } from '../store/dataStore';
-import { formatDateTime } from '../utils/formatDateTime';
-import { Moon, Sun, Download, Upload, Trash2, Check } from 'lucide-react';
-import { toast } from 'sonner';
+import { db } from '../db/db';
+import { compressImage } from '../utils/imageCompression';
+import { validateImportData } from '../utils/dataValidation';
+import { showSuccessToast, showErrorToast, showInfoToast } from '../store/toastStore';
+import { Button } from '@/components/ui/button';
+import { useEffect } from 'react';
 
-const GOLD_PRESETS = [
-  { name: 'Gold', hex: '#D4AF37' },
-  { name: 'Golden Yellow', hex: '#FFC300' },
-  { name: 'Amber Gold', hex: '#FFB000' },
-  { name: 'Deep Gold', hex: '#B8860B' },
-  { name: 'Warm Yellow', hex: '#FFD54A' },
+const FONT_OPTIONS = ['Inter', 'Poppins', 'Roboto', 'Open Sans'];
+const ACCENT_OPTIONS = [
+  { id: 'amber', label: 'Amber', color: '#f59e0b' },
+  { id: 'teal', label: 'Teal', color: '#14b8a6' },
+  { id: 'violet', label: 'Violet', color: '#8b5cf6' },
+  { id: 'rose', label: 'Rose', color: '#f43f5e' },
+  { id: 'emerald', label: 'Emerald', color: '#10b981' },
+  { id: 'sky', label: 'Sky', color: '#0ea5e9' },
+  { id: 'yellow', label: 'Yellow', color: '#facc15' },
+  { id: 'gold', label: 'Gold', color: '#d4a017' },
+  { id: 'golden-yellow', label: 'Golden', color: '#f0b429' },
 ];
 
-const OTHER_PRESETS = [
-  { name: 'Emerald', hex: '#10B981' },
-  { name: 'Sky Blue', hex: '#0EA5E9' },
-  { name: 'Rose', hex: '#F43F5E' },
-  { name: 'Violet', hex: '#8B5CF6' },
-  { name: 'Slate', hex: '#64748B' },
-];
+export function SettingsPage() {
+  const { theme, accentColor, fontFamily, setThemeMode, setAccent, setFont } = useAppStore();
+  const [storageInfo, setStorageInfo] = useState<{ used: number; quota: number } | null>(null);
+  const [clearStep, setClearStep] = useState(0);
+  const [clearConfirmText, setClearConfirmText] = useState('');
+  const [bgImageUrl, setBgImageUrl] = useState<string | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [showImportConfirm, setShowImportConfirm] = useState(false);
 
-export default function SettingsPage() {
-  const { darkMode, accentColor, fontSize, setDarkMode, setAccentColor, setFontSize } =
-    useAppStore();
-  const { exportData, importData, clearAllData } = useDataStore();
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    // Load storage info
+    if ('storage' in navigator && 'estimate' in navigator.storage) {
+      navigator.storage.estimate().then(({ usage, quota }) => {
+        setStorageInfo({ used: usage || 0, quota: quota || 0 });
+      });
+    }
+    // Load bg image
+    db.settings.toArray().then(settings => {
+      const bg = settings.find(s => s.key === 'bgImage');
+      if (bg) setBgImageUrl(bg.value);
+    });
+  }, []);
 
-  const handleExport = () => {
-    const json = exportData();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `organizer-backup-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(`Data exported at ${formatDateTime(new Date())}`);
-  };
+  const storagePercent = storageInfo ? Math.round((storageInfo.used / storageInfo.quota) * 100) : 0;
+  const storageMB = storageInfo ? (storageInfo.used / 1024 / 1024).toFixed(1) : '0';
+  const quotaMB = storageInfo ? (storageInfo.quota / 1024 / 1024).toFixed(0) : '0';
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const json = ev.target?.result as string;
-        importData(json);
-        toast.success(`Data imported at ${formatDateTime(new Date())}`);
-      } catch {
-        toast.error('Failed to import data. Invalid file format.');
-      }
-    };
-    reader.readAsText(file);
-    // Reset input
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    try {
+      const compressed = await compressImage(file, 1920, 0.7);
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const dataUrl = reader.result as string;
+        // Store in IndexedDB settings
+        const all = await db.settings.toArray();
+        const existing = all.find(s => s.key === 'bgImage');
+        if (existing?.id) {
+          await db.settings.put({ ...existing, value: dataUrl });
+        } else {
+          await db.settings.add({ key: 'bgImage', value: dataUrl });
+        }
+        setBgImageUrl(dataUrl);
+        document.documentElement.style.setProperty('--app-bg-image', `url("${dataUrl}")`);
+        showSuccessToast('Background image updated!');
+      };
+      reader.readAsDataURL(compressed);
+    } catch {
+      showErrorToast('Failed to upload background image');
+    }
   };
 
-  const handleClearAll = () => {
-    clearAllData();
-    setShowClearConfirm(false);
-    toast.success('All data cleared');
+  const removeBgImage = async () => {
+    try {
+      const all = await db.settings.toArray();
+      const existing = all.find(s => s.key === 'bgImage');
+      if (existing?.id) await db.settings.delete(existing.id);
+      setBgImageUrl(null);
+      document.documentElement.style.setProperty('--app-bg-image', 'none');
+      showSuccessToast('Background image removed');
+    } catch {
+      showErrorToast('Failed to remove background image');
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const [notes, routines, records, streak, quotes, labels] = await Promise.all([
+        db.notes.toArray(),
+        db.routines.toArray(),
+        db.records.toArray(),
+        db.streak.toArray(),
+        db.quotes.toArray(),
+        db.labels.toArray(),
+      ]);
+      const data = { notes, routines, records, streak, quotes, labels, exportedAt: new Date().toISOString() };
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `myorganizer-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showSuccessToast('Data exported successfully!');
+    } catch {
+      showErrorToast('Failed to export data');
+    }
+  };
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) { setImportFile(file); setShowImportConfirm(true); }
+  };
+
+  const handleImportConfirm = async () => {
+    if (!importFile) return;
+    try {
+      const text = await importFile.text();
+      const data = JSON.parse(text);
+      const validation = validateImportData(data);
+      if (!validation.valid) {
+        showErrorToast(`Invalid file: ${validation.errors.join(', ')}`);
+        return;
+      }
+      // Clear and reimport
+      await db.clearAll();
+      if (data.notes?.length) await db.notes.bulkAdd(data.notes.map((n: Record<string, unknown>) => { const { id: _, ...rest } = n; return rest; }));
+      if (data.routines?.length) await db.routines.bulkAdd(data.routines.map((r: Record<string, unknown>) => { const { id: _, ...rest } = r; return rest; }));
+      if (data.records?.length) await db.records.bulkAdd(data.records.map((r: Record<string, unknown>) => { const { id: _, ...rest } = r; return rest; }));
+      if (data.streak?.length) await db.streak.bulkAdd(data.streak.map((s: Record<string, unknown>) => { const { id: _, ...rest } = s; return rest; }));
+      if (data.quotes?.length) await db.quotes.bulkAdd(data.quotes.map((q: Record<string, unknown>) => { const { id: _, ...rest } = q; return rest; }));
+      if (data.labels?.length) await db.labels.bulkAdd(data.labels.map((l: Record<string, unknown>) => { const { id: _, ...rest } = l; return rest; }));
+      showSuccessToast('Data imported successfully! Refresh to see changes.');
+      setShowImportConfirm(false);
+      setImportFile(null);
+    } catch {
+      showErrorToast('Failed to import data. Invalid file format.');
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (clearStep === 0) { setClearStep(1); return; }
+    if (clearStep === 1) { setClearStep(2); return; }
+    if (clearConfirmText !== 'DELETE ALL') {
+      showErrorToast('Please type "DELETE ALL" to confirm');
+      return;
+    }
+    try {
+      await db.clearAll();
+      showSuccessToast('All data cleared. Refresh to start fresh.');
+      setClearStep(0);
+      setClearConfirmText('');
+    } catch {
+      showErrorToast('Failed to clear data');
+    }
   };
 
   return (
-    <div className="space-y-6 max-w-lg">
-      <h1 className="text-2xl font-bold">Settings</h1>
+    <div className="p-4 max-w-lg mx-auto pb-8">
+      <h1 className="text-xl font-bold mb-6">Settings</h1>
 
-      {/* Appearance */}
-      <section className="bg-card rounded-xl border border-border/50 p-4 space-y-4">
-        <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
-          Appearance
+      {/* Theme */}
+      <section className="bg-card rounded-xl border border-border/50 p-4 mb-4">
+        <h2 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          <Palette className="w-4 h-4 text-primary" /> Appearance
         </h2>
 
-        {/* Dark Mode */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {darkMode ? (
-              <Moon className="w-5 h-5" style={{ color: 'var(--accent)' }} />
-            ) : (
-              <Sun className="w-5 h-5" style={{ color: 'var(--accent)' }} />
-            )}
-            <div>
-              <p className="font-medium text-sm">Dark Mode</p>
-              <p className="text-xs text-muted-foreground">Toggle light/dark theme</p>
-            </div>
+        {/* Dark/Light toggle */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-sm font-medium">Theme</p>
+            <p className="text-xs text-muted-foreground">Choose light or dark mode</p>
           </div>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="relative w-12 h-6 rounded-full transition-colors"
-            style={{ background: darkMode ? 'var(--accent)' : 'var(--muted)' }}
-          >
-            <span
-              className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"
-              style={{ transform: darkMode ? 'translateX(24px)' : 'translateX(0)' }}
-            />
-          </button>
+          <div className="flex gap-1 bg-muted rounded-lg p-1">
+            <button
+              onClick={() => setThemeMode('light')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all
+                ${theme === 'light' ? 'bg-card shadow-xs text-foreground' : 'text-muted-foreground'}`}
+              aria-label="Light mode"
+              aria-pressed={theme === 'light'}
+            >
+              <Sun className="w-3.5 h-3.5" /> Light
+            </button>
+            <button
+              onClick={() => setThemeMode('dark')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all
+                ${theme === 'dark' ? 'bg-card shadow-xs text-foreground' : 'text-muted-foreground'}`}
+              aria-label="Dark mode"
+              aria-pressed={theme === 'dark'}
+            >
+              <Moon className="w-3.5 h-3.5" /> Dark
+            </button>
+          </div>
         </div>
 
-        {/* Font Size */}
-        <div>
-          <p className="font-medium text-sm mb-2">Font Size</p>
-          <div className="flex gap-2">
-            {(['small', 'medium', 'large'] as const).map((size) => (
+        {/* Accent color */}
+        <div className="mb-4">
+          <p className="text-sm font-medium mb-2">Accent Color</p>
+          <div className="flex gap-2 flex-wrap">
+            {ACCENT_OPTIONS.map(opt => (
               <button
-                key={size}
-                onClick={() => setFontSize(size)}
-                className="flex-1 py-2 rounded-lg text-sm font-medium border transition-all capitalize"
-                style={
-                  fontSize === size
-                    ? {
-                        background: 'var(--accent-soft)',
-                        borderColor: 'var(--accent)',
-                        color: 'var(--accent)',
-                      }
-                    : { borderColor: 'var(--border)', color: 'var(--muted-foreground)' }
-                }
+                key={opt.id}
+                onClick={() => setAccent(opt.id)}
+                className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all
+                  ${accentColor === opt.id ? 'border-primary' : 'border-transparent hover:border-border'}`}
+                aria-label={`Set accent color to ${opt.label}`}
+                aria-pressed={accentColor === opt.id}
               >
-                {size}
+                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: opt.color }} />
+                <span className="text-[10px] text-muted-foreground">{opt.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Font */}
+        <div>
+          <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
+            <Type className="w-3.5 h-3.5" /> Font Family
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {FONT_OPTIONS.map(font => (
+              <button
+                key={font}
+                onClick={() => setFont(font)}
+                className={`py-2 px-3 rounded-lg border text-sm transition-all
+                  ${fontFamily === font ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted'}`}
+                style={{ fontFamily: font }}
+                aria-label={`Set font to ${font}`}
+                aria-pressed={fontFamily === font}
+              >
+                {font}
               </button>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Accent Color */}
-      <section className="bg-card rounded-xl border border-border/50 p-4 space-y-4">
-        <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
-          Accent Color
+      {/* Background image */}
+      <section className="bg-card rounded-xl border border-border/50 p-4 mb-4">
+        <h2 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          <Image className="w-4 h-4 text-primary" /> Background Image
         </h2>
-
-        {/* Gold Presets */}
-        <div>
-          <p className="text-xs font-medium text-muted-foreground mb-2">✨ Gold Collection</p>
-          <div className="grid grid-cols-5 gap-2">
-            {GOLD_PRESETS.map((preset) => {
-              const isActive = accentColor.toLowerCase() === preset.hex.toLowerCase();
-              return (
-                <button
-                  key={preset.hex}
-                  onClick={() => setAccentColor(preset.hex)}
-                  className="flex flex-col items-center gap-1.5 group"
-                  title={preset.name}
-                >
-                  <div
-                    className="w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center shadow-sm"
-                    style={{
-                      background: preset.hex,
-                      borderColor: isActive ? '#1a1a1a' : 'transparent',
-                      boxShadow: isActive
-                        ? `0 0 0 3px ${preset.hex}40`
-                        : '0 1px 3px rgba(0,0,0,0.2)',
-                      transform: isActive ? 'scale(1.15)' : 'scale(1)',
-                    }}
-                  >
-                    {isActive && <Check className="w-4 h-4 text-black" />}
-                  </div>
-                  <span className="text-[10px] text-muted-foreground text-center leading-tight">
-                    {preset.name}
-                  </span>
-                </button>
-              );
-            })}
+        {bgImageUrl ? (
+          <div className="space-y-2">
+            <img src={bgImageUrl} alt="Background" className="w-full h-24 object-cover rounded-lg" />
+            <Button variant="outline" onClick={removeBgImage} size="sm" className="w-full" aria-label="Remove background image">
+              Remove Background
+            </Button>
           </div>
-        </div>
-
-        {/* Other Presets */}
-        <div>
-          <p className="text-xs font-medium text-muted-foreground mb-2">Other Colors</p>
-          <div className="grid grid-cols-5 gap-2">
-            {OTHER_PRESETS.map((preset) => {
-              const isActive = accentColor.toLowerCase() === preset.hex.toLowerCase();
-              return (
-                <button
-                  key={preset.hex}
-                  onClick={() => setAccentColor(preset.hex)}
-                  className="flex flex-col items-center gap-1.5 group"
-                  title={preset.name}
-                >
-                  <div
-                    className="w-10 h-10 rounded-full border-2 transition-all flex items-center justify-center shadow-sm"
-                    style={{
-                      background: preset.hex,
-                      borderColor: isActive ? 'white' : 'transparent',
-                      boxShadow: isActive
-                        ? `0 0 0 3px ${preset.hex}40`
-                        : '0 1px 3px rgba(0,0,0,0.2)',
-                      transform: isActive ? 'scale(1.15)' : 'scale(1)',
-                    }}
-                  >
-                    {isActive && <Check className="w-4 h-4 text-white" />}
-                  </div>
-                  <span className="text-[10px] text-muted-foreground text-center leading-tight">
-                    {preset.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Custom color input */}
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-medium">Custom:</label>
-          <input
-            type="color"
-            value={accentColor}
-            onChange={(e) => setAccentColor(e.target.value)}
-            className="w-10 h-10 rounded-lg border border-border/50 cursor-pointer bg-transparent"
-          />
-          <span className="text-sm text-muted-foreground font-mono">{accentColor}</span>
-        </div>
-      </section>
-
-      {/* Data Management */}
-      <section className="bg-card rounded-xl border border-border/50 p-4 space-y-3">
-        <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
-          Data Management
-        </h2>
-
-        <button
-          onClick={handleExport}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors text-left"
-        >
-          <Download className="w-5 h-5" style={{ color: 'var(--accent)' }} />
-          <div>
-            <p className="font-medium text-sm">Export Data</p>
-            <p className="text-xs text-muted-foreground">Download all your data as JSON</p>
-          </div>
-        </button>
-
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-border/50 hover:bg-muted/50 transition-colors text-left"
-        >
-          <Upload className="w-5 h-5" style={{ color: 'var(--accent)' }} />
-          <div>
-            <p className="font-medium text-sm">Import Data</p>
-            <p className="text-xs text-muted-foreground">Restore from a backup JSON file</p>
-          </div>
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          onChange={handleImport}
-          className="hidden"
-        />
-
-        {!showClearConfirm ? (
-          <button
-            onClick={() => setShowClearConfirm(true)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border border-destructive/30 hover:bg-destructive/10 transition-colors text-left"
-          >
-            <Trash2 className="w-5 h-5 text-destructive" />
-            <div>
-              <p className="font-medium text-sm text-destructive">Clear All Data</p>
-              <p className="text-xs text-muted-foreground">Permanently delete all your data</p>
-            </div>
-          </button>
         ) : (
-          <div className="border border-destructive/30 rounded-lg p-4">
-            <p className="text-sm font-medium text-destructive mb-3">
-              Are you sure? This cannot be undone.
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowClearConfirm(false)}
-                className="flex-1 py-2 rounded-lg text-sm border border-border/50 hover:bg-muted/50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleClearAll}
-                className="flex-1 py-2 rounded-lg text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
-              >
-                Delete All
-              </button>
-            </div>
-          </div>
+          <label className="flex flex-col items-center justify-center h-20 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+            <Image className="w-6 h-6 text-muted-foreground mb-1" />
+            <span className="text-xs text-muted-foreground">Upload background image</span>
+            <input type="file" accept="image/*" className="hidden" onChange={handleBgUpload} aria-label="Upload background image" />
+          </label>
         )}
       </section>
 
-      {/* About */}
-      <section className="bg-card rounded-xl border border-border/50 p-4">
-        <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground mb-3">
-          About
+      {/* Storage */}
+      <section className="bg-card rounded-xl border border-border/50 p-4 mb-4">
+        <h2 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          <HardDrive className="w-4 h-4 text-primary" /> Storage
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Personal Organizer — your all-in-one productivity companion.
-        </p>
-        <p className="text-xs text-muted-foreground mt-2">
-          Built with ❤️ using{' '}
-          <a
-            href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname || 'unknown-app')}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline"
-            style={{ color: 'var(--accent)' }}
-          >
-            caffeine.ai
-          </a>{' '}
-          © {new Date().getFullYear()}
-        </p>
+        {storageInfo ? (
+          <div>
+            <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+              <span>{storageMB} MB used</span>
+              <span>{storagePercent}% of {quotaMB} MB</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all ${storagePercent > 80 ? 'bg-destructive' : 'bg-primary'}`}
+                style={{ width: `${Math.min(storagePercent, 100)}%` }}
+              />
+            </div>
+            {storagePercent > 80 && (
+              <div className="flex items-center gap-2 mt-2 p-2 bg-destructive/10 rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
+                <p className="text-xs text-destructive">Storage is nearly full. Consider exporting and clearing old data.</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">Storage info unavailable</p>
+        )}
+      </section>
+
+      {/* Data management */}
+      <section className="bg-card rounded-xl border border-border/50 p-4 mb-4">
+        <h2 className="font-semibold text-sm mb-3">Data Management</h2>
+        <div className="space-y-2">
+          <Button onClick={handleExport} variant="outline" className="w-full gap-2" aria-label="Export all data">
+            <Download className="w-4 h-4" /> Export All Data
+          </Button>
+          <label className="block">
+            <Button variant="outline" className="w-full gap-2 cursor-pointer" asChild aria-label="Import data">
+              <span>
+                <Upload className="w-4 h-4" /> Import Data
+                <input type="file" accept=".json" className="hidden" onChange={handleImportFile} aria-label="Select import file" />
+              </span>
+            </Button>
+          </label>
+        </div>
+      </section>
+
+      {/* Import confirm */}
+      {showImportConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-card rounded-2xl border border-border/50 p-6 max-w-sm w-full">
+            <AlertTriangle className="w-8 h-8 text-destructive mx-auto mb-3" />
+            <h3 className="font-semibold text-center mb-2">Import Data?</h3>
+            <p className="text-sm text-muted-foreground text-center mb-4">
+              This will overwrite all existing data. This action cannot be undone.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => { setShowImportConfirm(false); setImportFile(null); }} className="flex-1" aria-label="Cancel import">
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleImportConfirm} className="flex-1" aria-label="Confirm import">
+                Import
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Danger zone */}
+      <section className="bg-card rounded-xl border border-destructive/30 p-4">
+        <h2 className="font-semibold text-sm mb-3 text-destructive flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4" /> Danger Zone
+        </h2>
+        {clearStep === 0 && (
+          <Button variant="destructive" onClick={handleClearAll} className="w-full gap-2" aria-label="Clear all data">
+            <Trash2 className="w-4 h-4" /> Clear All Data
+          </Button>
+        )}
+        {clearStep === 1 && (
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">Are you sure? This will delete everything.</p>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setClearStep(0)} className="flex-1" aria-label="Cancel">Cancel</Button>
+              <Button variant="destructive" onClick={handleClearAll} className="flex-1" aria-label="Continue to confirm">Continue</Button>
+            </div>
+          </div>
+        )}
+        {clearStep === 2 && (
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">Type <strong>DELETE ALL</strong> to confirm:</p>
+            <input
+              value={clearConfirmText}
+              onChange={e => setClearConfirmText(e.target.value)}
+              placeholder="DELETE ALL"
+              className="w-full bg-muted/50 rounded-lg p-2 text-sm border border-border/50 outline-none"
+              aria-label="Type DELETE ALL to confirm"
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => { setClearStep(0); setClearConfirmText(''); }} className="flex-1" aria-label="Cancel">Cancel</Button>
+              <Button variant="destructive" onClick={handleClearAll} className="flex-1" aria-label="Confirm delete all">Delete All</Button>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

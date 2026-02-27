@@ -1,60 +1,32 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Personal organizer web app (notes, routines, streaks, records, todos, habits) with date/time display everywhere in 12-hour AM/PM format, gold/yellow accent color presets, and consistent accent color application across all UI elements.",
-  "architectural_notes": [
-    "Use a single shared formatDateTime(ts) function returning 'DD MMM YYYY, h:mm A' format for all timestamp displays",
-    "Store all timestamps as ISO strings via new Date().toISOString()",
-    "Define CSS variables --accent, --accent-2 (slightly darker), --accent-soft (transparent) for theming"
-  ],
+  "summary": "Project with date/time display, gold/yellow accent colors, and light theme as default.",
+  "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-create-a-shared-utility-function-formatdatetime-ts-string-number-date-string-in-frontend-src-utils-formatdatetime-ts-that-returns-dates-in-dd-mmm-yyyy-h-mm-a-format-e-g-28-feb-2026-3-45-am-if-the-input-is-a-date-only-string-no-time-component-default-the-time-to-12-00-am-the-function-must-never-throw-wrap-parsing-in-a-try-catch-and-return-a-safe-fallback-string-on-error",
-      "title": "Create a shared utility function `formatDateTime(ts: string | number | Date): string` in `frontend/src/utils/formatDateTime.ts` that returns dates in 'DD MMM YYYY, h:mm A' format (e.g. '28 Feb 2026, 3:45 AM'). If the input is a date-only string (no time component), default the time to 12:00 AM. The function must never throw — wrap parsing in a try/catch and return a safe fallback string on error.",
+      "id": "feature-on-the-home-page-homepage-tsx-update-the-date-display-to-also-show-the-current-time-alongside-the-date-the-time-should-update-in-real-time-or-at-least-on-page-load-refresh-and-be-formatted-clearly-e-g-monday-june-10-3-45-pm",
+      "title": "On the Home page (HomePage.tsx), update the date display to also show the current time alongside the date. The time should update in real time (or at least on page load/refresh) and be formatted clearly (e.g., 'Monday, June 10 · 3:45 PM').",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-replace-all-bare-date-only-displays-throughout-the-app-with-calls-to-formatdatetime-specifically-update-streak-last-check-in-timestamp-in-streakwidget-tsx-and-streakpage-tsx-record-created-at-in-recordspage-tsx-routine-item-created-updated-timestamps-in-routinespage-tsx-note-timestamps-created-updated-reminder-in-notecard-tsx-and-notemodal-tsx-todo-due-created-dates-habit-log-entries-export-import-log-messages-in-settingspage-tsx-also-ensure-new-timestamps-are-stored-as-new-date-toisostring-wherever-a-timestamp-is-written-to-indexeddb",
-      "title": "Replace all bare date-only displays throughout the app with calls to `formatDateTime`. Specifically update: streak last check-in timestamp in `StreakWidget.tsx` and `StreakPage.tsx`; record created-at in `RecordsPage.tsx`; routine item created/updated timestamps in `RoutinesPage.tsx`; note timestamps (created, updated, reminder) in `NoteCard.tsx` and `NoteModal.tsx`; todo due/created dates; habit log entries; export/import log messages in `SettingsPage.tsx`. Also ensure new timestamps are stored as `new Date().toISOString()` wherever a timestamp is written to IndexedDB.",
+      "id": "feature-in-the-settings-page-accent-color-picker-settingspage-tsx-and-the-app-s-color-token-definitions-index-css-tailwind-config-js-appstore-ts-add-yellow-gold-and-golden-yellow-as-selectable-accent-color-options-these-should-apply-consistently-across-the-app-s-accent-colored-ui-elements-buttons-highlights-active-states-etc",
+      "title": "In the Settings page accent color picker (SettingsPage.tsx) and the app's color token definitions (index.css, tailwind.config.js, appStore.ts), add yellow, gold, and golden yellow as selectable accent color options. These should apply consistently across the app's accent-colored UI elements (buttons, highlights, active states, etc.).",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-add-five-gold-yellow-accent-color-presets-to-the-accent-color-picker-in-settingspage-tsx-gold-d4af37-golden-yellow-ffc300-amber-gold-ffb000-deep-gold-b8860b-warm-yellow-ffd54a-each-preset-must-render-as-a-clickable-color-swatch-button-with-its-label-when-selected-the-accent-color-must-be-saved-to-localstorage-and-applied-immediately-across-the-ui-if-no-user-preference-exists-in-localstorage-default-the-accent-to-gold-d4af37",
-      "title": "Add five gold/yellow accent color presets to the accent color picker in `SettingsPage.tsx`: Gold (#D4AF37), Golden Yellow (#FFC300), Amber Gold (#FFB000), Deep Gold (#B8860B), Warm Yellow (#FFD54A). Each preset must render as a clickable color swatch button with its label. When selected, the accent color must be saved to localStorage and applied immediately across the UI. If no user preference exists in localStorage, default the accent to Gold (#D4AF37).",
+      "id": "feature-change-the-app-s-default-theme-to-light-in-appstore-ts-and-the-settings-initialization-logic-in-app-tsx-ensure-that-when-no-theme-preference-is-stored-in-localstorage-the-app-defaults-to-the-light-theme-instead-of-dark",
+      "title": "Change the app's default theme to light. In appStore.ts and the settings initialization logic in App.tsx, ensure that when no theme preference is stored in localStorage, the app defaults to the light theme instead of dark.",
       "reqIds": [
         "REQ-3"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-ensure-gold-accent-colors-are-readable-in-both-light-and-dark-mode-for-bright-accents-ffc300-ffd54a-on-white-light-backgrounds-use-dark-text-1a1a1a-or-similar-on-accent-colored-buttons-instead-of-white-text-add-a-subtle-box-shadow-or-border-to-bright-accent-buttons-to-maintain-definition-on-light-backgrounds-derive-hover-and-active-states-by-darkening-the-accent-color-by-10-15-can-be-done-via-css-filter-brightness-0-88-or-a-computed-darker-hex",
-      "title": "Ensure gold accent colors are readable in both light and dark mode. For bright accents (#FFC300, #FFD54A) on white/light backgrounds, use dark text (#1a1a1a or similar) on accent-colored buttons instead of white text. Add a subtle box-shadow or border to bright accent buttons to maintain definition on light backgrounds. Derive hover and active states by darkening the accent color by ~10–15% (can be done via CSS `filter: brightness(0.88)` or a computed darker hex).",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-introduce-three-css-custom-properties-on-the-root-and-updated-in-the-theme-logic-appstore-ts-accent-the-chosen-accent-hex-accent-2-the-accent-darkened-15-for-hover-secondary-use-and-accent-soft-the-accent-at-15-opacity-for-backgrounds-chips-update-frontend-src-index-css-and-frontend-index-css-to-declare-these-variables-update-appstore-ts-applyaccent-or-equivalent-to-compute-and-set-all-three-variables-on-the-document-root-whenever-the-accent-changes",
-      "title": "Introduce three CSS custom properties on the `:root` (and updated in the theme logic / `appStore.ts`): `--accent` (the chosen accent hex), `--accent-2` (the accent darkened ~15% for hover/secondary use), and `--accent-soft` (the accent at ~15% opacity for backgrounds/chips). Update `frontend/src/index.css` and `frontend/index.css` to declare these variables. Update `appStore.ts` `applyAccent` (or equivalent) to compute and set all three variables on the document root whenever the accent changes.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-apply-the-accent-color-consistently-across-all-primary-interactive-and-visual-elements-by-replacing-hardcoded-color-classes-with-var-accent-references-inline-styles-or-css-classes-elements-to-update-primary-cta-buttons-add-save-check-in-export-import-active-nav-tab-indicator-in-bottomtabbar-tsx-and-appsidebar-tsx-selected-active-chip-backgrounds-in-filters-and-label-selectors-progress-bars-and-progress-highlights-the-streak-ring-circle-in-streakwidget-tsx-and-streakpage-tsx-and-routine-timeline-markers-dots-in-routinespage-tsx",
-      "title": "Apply the accent color consistently across all primary interactive and visual elements by replacing hardcoded color classes with `var(--accent)` references (inline styles or CSS classes). Elements to update: primary CTA buttons (Add, Save, Check In, Export, Import), active nav tab indicator in `BottomTabBar.tsx` and `AppSidebar.tsx`, selected/active chip backgrounds in filters and label selectors, progress bars and progress highlights, the streak ring/circle in `StreakWidget.tsx` and `StreakPage.tsx`, and routine timeline markers/dots in `RoutinesPage.tsx`.",
-      "reqIds": [
-        "REQ-6"
       ],
       "version": 1
     }
@@ -62,25 +34,25 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Display date AND time (12-hour AM/PM) everywhere timestamps appear; use shared formatDateTime() formatter; fallback gracefully for date-only stored values",
+      "summary": "Add time display alongside date",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-2",
-      "summary": "Add gold/yellow accent color presets (Gold, Golden Yellow, Amber Gold, Deep Gold, Warm Yellow) to accent color picker; default to Gold #D4AF37; ensure contrast in light/dark mode",
+      "summary": "Add yellow, gold, and golden yellow options to accent color picker",
       "reqIds": [],
       "status": "pending"
     },
     {
       "id": "AR-3",
-      "summary": "Apply accent color consistently via CSS variables (--accent, --accent-2, --accent-soft) across all CTAs, nav tabs, chips, progress, streak ring, and timeline markers",
+      "summary": "Set light theme as the default theme",
       "reqIds": [],
       "status": "pending"
     }
   ],
   "gameProjectType": "none",
-  "projectName": "Personal Organizer",
+  "projectName": "MyOrganizer Pro",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -1,160 +1,80 @@
-/**
- * Global application store using Zustand.
- * Manages theme (dark/light), accent color (with gold presets), font size, and background image.
- * Persists settings to localStorage and applies CSS custom properties to the document root.
- */
 import { create } from 'zustand';
+import { getTheme, setTheme, getAccentColor, setAccentColor, getFontFamily, setFontFamily } from '../utils/storage';
 
-export interface AppSettings {
-  darkMode: boolean;
-  accentColor: string;
-  fontSize: 'small' | 'medium' | 'large';
-  backgroundImage: string | null;
-}
+const ACCENT_PRESETS: Record<string, { primary: string; ring: string }> = {
+  amber: { primary: '0.72 0.18 55', ring: '0.72 0.18 55' },
+  teal: { primary: '0.65 0.15 180', ring: '0.65 0.15 180' },
+  violet: { primary: '0.60 0.20 280', ring: '0.60 0.20 280' },
+  rose: { primary: '0.65 0.22 15', ring: '0.65 0.22 15' },
+  emerald: { primary: '0.65 0.18 145', ring: '0.65 0.18 145' },
+  sky: { primary: '0.65 0.15 220', ring: '0.65 0.15 220' },
+  yellow: { primary: '0.85 0.20 95', ring: '0.85 0.20 95' },
+  gold: { primary: '0.75 0.19 70', ring: '0.75 0.19 70' },
+  'golden-yellow': { primary: '0.80 0.22 80', ring: '0.80 0.22 80' },
+};
 
-interface AppStore extends AppSettings {
-  setDarkMode: (val: boolean) => void;
-  setAccentColor: (color: string) => void;
-  setFontSize: (size: 'small' | 'medium' | 'large') => void;
-  setBackgroundImage: (url: string | null) => void;
-  applySettings: () => void;
-}
-
-const DEFAULT_ACCENT = '#D4AF37'; // Gold
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-    : null;
-}
-
-function darkenHex(hex: string, amount: number): string {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return hex;
-  const r = Math.max(0, Math.round(rgb.r * (1 - amount)));
-  const g = Math.max(0, Math.round(rgb.g * (1 - amount)));
-  const b = Math.max(0, Math.round(rgb.b * (1 - amount)));
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
-
-function getLuminance(hex: string): number {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return 0.5;
-  const { r, g, b } = rgb;
-  const toLinear = (c: number) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  };
-  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
-}
-
-function applyAccent(color: string) {
-  const root = document.documentElement;
-  const accent2 = darkenHex(color, 0.15);
-  const rgb = hexToRgb(color);
-  const accentSoft = rgb
-    ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.15)`
-    : 'rgba(212, 175, 55, 0.15)';
-
-  root.style.setProperty('--accent', color);
-  root.style.setProperty('--accent-2', accent2);
-  root.style.setProperty('--accent-soft', accentSoft);
-
-  // Determine text color for accent buttons based on luminance
-  const luminance = getLuminance(color);
-  const textColor = luminance > 0.35 ? '#1a1a1a' : '#ffffff';
-  root.style.setProperty('--accent-text', textColor);
-}
-
-function applyTheme(darkMode: boolean) {
-  if (darkMode) {
+function applyTheme(theme: 'light' | 'dark'): void {
+  if (theme === 'dark') {
     document.documentElement.classList.add('dark');
   } else {
     document.documentElement.classList.remove('dark');
   }
 }
 
-function applyFontSize(size: 'small' | 'medium' | 'large') {
-  const map = { small: '14px', medium: '16px', large: '18px' };
-  document.documentElement.style.setProperty('--app-font-size', map[size]);
+function applyAccent(accent: string): void {
+  const preset = ACCENT_PRESETS[accent] || ACCENT_PRESETS.amber;
+  document.documentElement.style.setProperty('--primary', preset.primary);
+  document.documentElement.style.setProperty('--ring', preset.ring);
+  document.documentElement.style.setProperty('--accent', preset.primary);
+  document.documentElement.style.setProperty('--app-accent', `oklch(${preset.primary})`);
 }
 
-function loadSettings(): AppSettings {
-  try {
-    const stored = localStorage.getItem('appSettings');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return {
-        darkMode: parsed.darkMode ?? false,
-        accentColor: parsed.accentColor ?? DEFAULT_ACCENT,
-        fontSize: parsed.fontSize ?? 'medium',
-        backgroundImage: parsed.backgroundImage ?? null,
-      };
-    }
-  } catch {
-    // ignore
-  }
-  return {
-    darkMode: false,
-    accentColor: DEFAULT_ACCENT,
-    fontSize: 'medium',
-    backgroundImage: null,
-  };
+function applyFont(font: string): void {
+  document.documentElement.style.setProperty('--app-font', `'${font}', sans-serif`);
 }
 
-function saveSettings(settings: AppSettings) {
-  try {
-    localStorage.setItem('appSettings', JSON.stringify(settings));
-  } catch {
-    // ignore
-  }
+interface AppState {
+  theme: 'light' | 'dark';
+  accentColor: string;
+  fontFamily: string;
+  accentPresets: typeof ACCENT_PRESETS;
+  setThemeMode: (theme: 'light' | 'dark') => void;
+  setAccent: (accent: string) => void;
+  setFont: (font: string) => void;
+  initSettings: () => void;
 }
 
-const initialSettings = loadSettings();
+export const useAppStore = create<AppState>((set) => ({
+  theme: 'light',
+  accentColor: 'amber',
+  fontFamily: 'Inter',
+  accentPresets: ACCENT_PRESETS,
 
-export const useAppStore = create<AppStore>((set, get) => ({
-  ...initialSettings,
-
-  setDarkMode: (val) => {
-    set({ darkMode: val });
-    applyTheme(val);
-    saveSettings({ ...get(), darkMode: val });
+  setThemeMode: (theme) => {
+    setTheme(theme);
+    applyTheme(theme);
+    set({ theme });
   },
 
-  setAccentColor: (color) => {
-    set({ accentColor: color });
-    applyAccent(color);
-    saveSettings({ ...get(), accentColor: color });
+  setAccent: (accent) => {
+    setAccentColor(accent);
+    applyAccent(accent);
+    set({ accentColor: accent });
   },
 
-  setFontSize: (size) => {
-    set({ fontSize: size });
-    applyFontSize(size);
-    saveSettings({ ...get(), fontSize: size });
+  setFont: (font) => {
+    setFontFamily(font);
+    applyFont(font);
+    set({ fontFamily: font });
   },
 
-  setBackgroundImage: (url) => {
-    set({ backgroundImage: url });
-    if (url) {
-      document.documentElement.style.setProperty('--app-bg-image', `url(${url})`);
-    } else {
-      document.documentElement.style.removeProperty('--app-bg-image');
-    }
-    saveSettings({ ...get(), backgroundImage: url });
-  },
-
-  applySettings: () => {
-    const s = get();
-    applyTheme(s.darkMode);
-    applyAccent(s.accentColor);
-    applyFontSize(s.fontSize);
-    if (s.backgroundImage) {
-      document.documentElement.style.setProperty('--app-bg-image', `url(${s.backgroundImage})`);
-    }
+  initSettings: () => {
+    const theme = getTheme();
+    const accent = getAccentColor();
+    const font = getFontFamily();
+    applyTheme(theme);
+    applyAccent(accent);
+    applyFont(font);
+    set({ theme, accentColor: accent, fontFamily: font });
   },
 }));

@@ -6,7 +6,7 @@ const SETTINGS_KEYS = {
 } as const;
 
 export function getTheme(): 'light' | 'dark' {
-  return (localStorage.getItem(SETTINGS_KEYS.THEME) as 'light' | 'dark') || 'dark';
+  return (localStorage.getItem(SETTINGS_KEYS.THEME) as 'light' | 'dark') || 'light';
 }
 
 export function setTheme(theme: 'light' | 'dark'): void {

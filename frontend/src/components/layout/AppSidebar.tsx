@@ -1,62 +1,77 @@
-/**
- * Desktop sidebar navigation with icon + label nav items.
- * Active item is highlighted using the accent color CSS variable.
- */
 import React from 'react';
-import {
-  Home,
-  FileText,
-  BarChart2,
-  Calendar,
-  Flame,
-  Quote,
-  Settings,
-} from 'lucide-react';
-import { TabId } from '../../App';
+import { Home, Calendar, StickyNote, BookOpen, Settings, Flame } from 'lucide-react';
 
-interface AppSidebarProps {
-  activeTab: TabId;
-  onTabChange: (tab: TabId) => void;
-}
-
-const NAV_ITEMS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: 'home', label: 'Home', icon: <Home className="w-4 h-4" /> },
-  { id: 'notes', label: 'Notes', icon: <FileText className="w-4 h-4" /> },
-  { id: 'records', label: 'Records', icon: <BarChart2 className="w-4 h-4" /> },
-  { id: 'routines', label: 'Routines', icon: <Calendar className="w-4 h-4" /> },
-  { id: 'streak', label: 'Streak', icon: <Flame className="w-4 h-4" /> },
-  { id: 'quotes', label: 'Quotes', icon: <Quote className="w-4 h-4" /> },
-  { id: 'settings', label: 'Settings', icon: <Settings className="w-4 h-4" /> },
+const TABS = [
+  { id: 'home', label: 'Home', icon: Home },
+  { id: 'routines', label: 'Routines', icon: Calendar },
+  { id: 'notes', label: 'Notes', icon: StickyNote },
+  { id: 'records', label: 'Records', icon: BookOpen },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
-export default function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
+interface AppSidebarProps {
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+}
+
+export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
   return (
-    <nav className="flex flex-col gap-1 p-3 pt-6">
-      {NAV_ITEMS.map((item) => {
-        const isActive = activeTab === item.id;
-        return (
-          <button
-            key={item.id}
-            onClick={() => onTabChange(item.id)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 w-full text-left"
-            style={
-              isActive
-                ? {
-                    background: 'var(--accent-soft)',
-                    color: 'var(--accent)',
-                    borderLeft: '3px solid var(--accent)',
-                  }
-                : {
-                    color: 'var(--muted-foreground, #888)',
-                    borderLeft: '3px solid transparent',
-                  }
-            }
+    <aside
+      className="hidden md:flex flex-col w-56 bg-sidebar border-r border-sidebar-border shrink-0"
+      aria-label="Sidebar navigation"
+    >
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 px-5 py-5 border-b border-sidebar-border">
+        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+          <Flame className="w-4 h-4 text-primary-foreground" />
+        </div>
+        <div>
+          <div className="font-bold text-sm text-sidebar-foreground">MyOrganizer</div>
+          <div className="text-[10px] text-muted-foreground">Pro</div>
+        </div>
+      </div>
+
+      {/* Nav items */}
+      <nav className="flex-1 p-3 space-y-1" aria-label="Main navigation">
+        {TABS.map(({ id, label, icon: Icon }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => onTabChange(id)}
+              className={`
+                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+                transition-all duration-150
+                ${isActive
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                }
+              `}
+              aria-label={`${label}${isActive ? ', currently active' : ''}`}
+              aria-current={isActive ? 'page' : undefined}
+            >
+              <Icon className="w-4 h-4 shrink-0" strokeWidth={isActive ? 2.5 : 1.8} />
+              {label}
+              {isActive && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t border-sidebar-border">
+        <p className="text-[10px] text-muted-foreground text-center">
+          Built with ❤️ using{' '}
+          <a
+            href={`https://caffeine.ai/?utm_source=Caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname || 'myorganizer-pro')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
           >
-            <span style={isActive ? { color: 'var(--accent)' } : {}}>{item.icon}</span>
-            {item.label}
-          </button>
-        );
-      })}
-    </nav>
+            caffeine.ai
+          </a>
+        </p>
+      </div>
+    </aside>
   );
 }
