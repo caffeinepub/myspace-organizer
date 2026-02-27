@@ -1,20 +1,104 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Update greeting text on HomePage",
+  "title": "Add Font Family selector with 12 font options (including Castellar) to settings",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Replace the greeting text 'Good morning 👋' with 'Hi Dev...💛' in the HomePage component",
+      "summary": "Add efficient Google Fonts preconnect and stylesheet links to index.html for 11 new fonts (Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, and Cinzel Decorative as fallback for Castellar)",
       "acceptanceCriteria": [
-        "The home page displays 'Hi Dev...💛' instead of 'Good morning 👋'.",
-        "No other text, layout, styling, or functionality on any page is changed."
+        "All 11 Google Fonts (Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, Cinzel Decorative) are linked in index.html with preconnect hints and font-display=swap.",
+        "Existing font imports in index.html are preserved unchanged.",
+        "Page load performance is not meaningfully degraded (fonts load asynchronously)."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/HomePage.tsx",
+          "path": "frontend/index.html",
           "operation": "modify",
-          "description": "Update the greeting text string from 'Good morning 👋' to 'Hi Dev...💛'. This is a single-line text change with no other modifications to the component's layout, styling, props, state, hooks, or any other functionality."
+          "description": "Add Google Fonts preconnect hints (<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">) and stylesheet link with font-display=swap for the 11 new fonts: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, and Cinzel Decorative. Preserve all existing font links. Load only regular (400) and medium (500) weights to minimize performance impact."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Extend Tailwind fontFamily configuration to include all 12 new font families with Castellar using fallback stack 'Castellar', 'Cinzel Decorative', 'Cinzel', serif",
+      "acceptanceCriteria": [
+        "All 12 font families are defined in tailwind.config.js fontFamily section.",
+        "Castellar entry uses the fallback stack: 'Castellar', 'Cinzel Decorative', 'Cinzel', serif.",
+        "No existing font family entries are removed or altered."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/tailwind.config.js",
+          "operation": "modify",
+          "description": "Extend the theme.extend.fontFamily object to add 12 new font family keys: 'inter': ['Inter', 'sans-serif'], 'poppins': ['Poppins', 'sans-serif'], 'montserrat': ['Montserrat', 'sans-serif'], 'roboto': ['Roboto', 'sans-serif'], 'opensans': ['Open Sans', 'sans-serif'], 'lato': ['Lato', 'sans-serif'], 'nunito': ['Nunito', 'sans-serif'], 'playfair': ['Playfair Display', 'serif'], 'merriweather': ['Merriweather', 'serif'], 'sourcesans': ['Source Sans 3', 'sans-serif'], 'jetbrains': ['JetBrains Mono', 'monospace'], 'castellar': ['Castellar', 'Cinzel Decorative', 'Cinzel', 'serif']. Preserve all existing fontFamily entries."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Extend the fontFamily storage type in storage.ts to support all 12 new font values in addition to existing values",
+      "acceptanceCriteria": [
+        "The fontFamily localStorage utility accepts and returns all 12 new font name strings.",
+        "Existing font values and the storage key are unchanged.",
+        "No other storage utilities are modified."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/storage.ts",
+          "operation": "modify",
+          "description": "Extend the FontFamily type union to include the 12 new font values: 'Inter', 'Poppins', 'Montserrat', 'Roboto', 'Open Sans', 'Lato', 'Nunito', 'Playfair Display', 'Merriweather', 'Source Sans 3', 'JetBrains Mono', 'Castellar'. Keep existing font values unchanged. Ensure setFontFamily and getFontFamily functions support the extended type."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Extend appStore font options to include all 12 new fonts and ensure font selection applies to DOM via existing CSS variable or class mechanism",
+      "acceptanceCriteria": [
+        "All 12 new fonts are listed as valid options in the appStore font configuration.",
+        "Selecting a font applies it to the app using the same DOM mechanism as existing fonts.",
+        "The default font is unchanged; app appearance is identical to before unless a new font is explicitly selected.",
+        "No existing font options or store logic is removed."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/store/appStore.ts",
+          "operation": "modify",
+          "description": "Add 12 new font options to the font options array/enum: 'Inter', 'Poppins', 'Montserrat', 'Roboto', 'Open Sans', 'Lato', 'Nunito', 'Playfair Display', 'Merriweather', 'Source Sans 3', 'JetBrains Mono', 'Castellar'. Ensure the existing setFont or applyFont function applies the selected font to the DOM (e.g., via document.documentElement.style.setProperty or className) using the same mechanism as currently implemented. Do not change the default font value."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Add a Font Family dropdown selector to SettingsPage that lists all existing and 12 new font options, updating appStore and persisting selection via localStorage",
+      "acceptanceCriteria": [
+        "A 'Font Family' dropdown is present in the settings page font section.",
+        "The dropdown lists all 12 new fonts plus any previously existing font options.",
+        "Selecting a font immediately applies it to the app and persists the choice in localStorage.",
+        "The default font is pre-selected on first load (no visual change from before).",
+        "No other UI elements on SettingsPage are altered (no layout, styling, or label changes)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/SettingsPage.tsx",
+          "operation": "modify",
+          "description": "In the existing font settings section (where font styling is configured), add a 'Font Family' dropdown/selector component. Populate the dropdown with all existing font options plus the 12 new ones: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, Castellar. Wire the dropdown to read the current font from appStore and call the appStore setFont function on change. Ensure the selected font persists via the existing localStorage mechanism (triggered by appStore). Do not alter any other UI elements, layout, styling, or labels on the page."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Extend the QuotePage font selector (if present) with the 12 new font options without removing existing options or changing other UI",
+      "acceptanceCriteria": [
+        "QuotePage font selector includes all 12 new font options in addition to any existing ones.",
+        "No existing font options on QuotePage are removed.",
+        "No other UI elements on QuotePage are changed."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/QuotePage.tsx",
+          "operation": "modify",
+          "description": "If a font selector for the quote widget exists on QuotePage, extend its font options list to include the 12 new fonts: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, Castellar. Do not remove any existing font options. Do not change any other part of the QuotePage UI (layout, styling, labels, or behavior). If the font selector updates a separate quote-specific font setting (not the global appStore font), follow the existing pattern for that local state."
         }
       ]
     }

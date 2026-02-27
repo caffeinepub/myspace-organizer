@@ -1,43 +1,50 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-27T23:04:06.041Z",
-  "summary": "The diff correctly implements REQ-1 by replacing 'Good morning 👋' with 'Hi Dev...💛' in frontend/src/pages/HomePage.tsx. The change is isolated to the greeting text string. However, the diff also includes modifications to several other files referenced in frontend-file-summaries.txt that go beyond the constrained scope of only changing the greeting string.",
-  "missing_requirements": [],
-  "hallucinated_features": [
+  "generatedAt": "2026-02-27T23:16:54.695Z",
+  "summary": "The diff implements most requirements: Google Fonts are added to index.html, Tailwind fontFamily is extended, SettingsPage has a Font Family dropdown, QuotePage extends its font options, and appStore/storage.ts are noted in file summaries as updated. However, the diff does not directly show the contents of storage.ts or appStore.ts — only file summaries reference them. The index.html has preconnect tags present for the first Google Fonts link. One notable issue: appStore.ts and storage.ts changes are only described in file summaries, not shown directly in diff content.",
+  "missing_requirements": [
     {
-      "description": "New yellow, gold, and golden-yellow OKLCH accent color presets added to the Zustand app store and Settings page.",
-      "reason": "The build request explicitly states no feature additions or removals and no UI/styling changes are permitted. Adding new accent color options was not requested.",
+      "id": "REQ-3",
+      "requirement": "In frontend/src/utils/storage.ts, ensure the existing typed localStorage getter/setter for fontFamily supports all 12 new font values.",
+      "reason": "The diff does not include direct content changes to frontend/src/utils/storage.ts. Only the file summary mentions a default theme change to 'light', with no explicit evidence of fontFamily type union being updated to include all 12 fonts.",
       "evidence": [
         "frontend-file-summaries.txt"
       ]
     },
     {
-      "description": "Default theme changed from 'dark' to 'light' in storage.ts.",
-      "reason": "No theme default change was requested. The constraint explicitly forbids layout or visual design updates.",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "New shared utility module formatDateTime created in frontend/src/utils/dateFormatter.ts, and multiple components (StreakWidget, StreakPage, RecordsPage) updated to use it.",
-      "reason": "Creating a new utility and refactoring existing components was not requested. The build request only permits changing the greeting string.",
-      "evidence": [
-        "frontend-file-summaries.txt"
-      ]
-    },
-    {
-      "description": "CSS fix replacing @apply border-border/50 with plain CSS in index.css.",
-      "reason": "No CSS or styling fixes were requested in the build request.",
+      "id": "REQ-4",
+      "requirement": "In frontend/src/store/appStore.ts, extend the font options list/enum to include all 12 new fonts and apply them to the DOM consistently.",
+      "reason": "The diff does not include direct content changes to frontend/src/store/appStore.ts. The file summary only mentions accent color additions, with no explicit evidence of font options list being extended to all 12 fonts.",
       "evidence": [
         "frontend-file-summaries.txt"
       ]
     }
   ],
-  "confidence": 0.82,
+  "hallucinated_features": [
+    {
+      "description": "A FONT_FAMILY_MAP object with full CSS font stacks is defined locally in both SettingsPage.tsx and QuotePage.tsx.",
+      "reason": "The build request only asks to add font options to selectors and update tailwind/store/storage. Local FONT_FAMILY_MAP constants in page components were not specified.",
+      "evidence": [
+        "frontend/src/pages/SettingsPage.tsx",
+        "frontend/src/pages/QuotePage.tsx"
+      ]
+    },
+    {
+      "description": "Cinzel (non-Decorative) is loaded as a separate Google Font in index.html.",
+      "reason": "REQ-1 only specifies loading Cinzel Decorative as the fallback for Castellar. Loading plain Cinzel as a separate font was not explicitly requested.",
+      "evidence": [
+        "frontend/index.html"
+      ]
+    }
+  ],
+  "confidence": 0.62,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/pages/HomePage.tsx",
+    "frontend/index.html",
+    "frontend/src/pages/QuotePage.tsx",
+    "frontend/src/pages/SettingsPage.tsx",
+    "frontend/tailwind.config.js",
     "project_state.json"
   ]
 }

@@ -11,7 +11,39 @@ interface QuotePageProps {
   onBack: () => void;
 }
 
-const FONT_OPTIONS = ['Inter', 'Poppins', 'Roboto', 'Open Sans', 'Georgia', 'serif'];
+const FONT_OPTIONS = [
+  'Inter',
+  'Poppins',
+  'Roboto',
+  'Open Sans',
+  'Georgia',
+  'serif',
+  'Montserrat',
+  'Lato',
+  'Nunito',
+  'Playfair Display',
+  'Merriweather',
+  'Source Sans 3',
+  'JetBrains Mono',
+  'Castellar',
+];
+
+const FONT_FAMILY_MAP: Record<string, string> = {
+  'Inter': 'Inter, sans-serif',
+  'Poppins': 'Poppins, sans-serif',
+  'Roboto': 'Roboto, sans-serif',
+  'Open Sans': 'Open Sans, sans-serif',
+  'Georgia': 'Georgia, serif',
+  'serif': 'serif',
+  'Montserrat': 'Montserrat, sans-serif',
+  'Lato': 'Lato, sans-serif',
+  'Nunito': 'Nunito, sans-serif',
+  'Playfair Display': 'Playfair Display, serif',
+  'Merriweather': 'Merriweather, serif',
+  'Source Sans 3': 'Source Sans 3, sans-serif',
+  'JetBrains Mono': 'JetBrains Mono, monospace',
+  'Castellar': 'Castellar, "Cinzel Decorative", Cinzel, serif',
+};
 
 export function QuotePage({ onBack }: QuotePageProps) {
   const { quote, loading, saveQuote } = useQuote();
@@ -91,12 +123,12 @@ export function QuotePage({ onBack }: QuotePageProps) {
       >
         <p
           className="italic leading-relaxed"
-          style={{ fontFamily, fontSize: `${fontSize}px`, color: fontColor }}
+          style={{ fontFamily: FONT_FAMILY_MAP[fontFamily] || fontFamily, fontSize: `${fontSize}px`, color: fontColor }}
         >
           "{text || 'Your quote will appear here...'}"
         </p>
         {author && (
-          <p className="text-sm text-muted-foreground mt-2 not-italic" style={{ fontFamily }}>
+          <p className="text-sm text-muted-foreground mt-2 not-italic" style={{ fontFamily: FONT_FAMILY_MAP[fontFamily] || fontFamily }}>
             — {author}
           </p>
         )}
@@ -145,8 +177,13 @@ export function QuotePage({ onBack }: QuotePageProps) {
             onChange={e => setFontFamily(e.target.value)}
             className="w-full bg-muted/50 rounded-lg p-2 text-sm border border-border/50 outline-none"
             aria-label="Font family"
+            style={{ fontFamily: FONT_FAMILY_MAP[fontFamily] || fontFamily }}
           >
-            {FONT_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+            {FONT_OPTIONS.map(f => (
+              <option key={f} value={f} style={{ fontFamily: FONT_FAMILY_MAP[f] || f }}>
+                {f}
+              </option>
+            ))}
           </select>
         </div>
 

@@ -1,36 +1,141 @@
 {
   "kind": "build_request",
-  "title": "Update greeting text on HomePage",
+  "title": "Add Font Family selector with 12 font options (including Castellar) to settings",
+  "projectName": "MyOrganizer Pro",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In the HomePage component (frontend/src/pages/HomePage.tsx), replace the greeting text 'Good morning 👋' with 'Hi Dev...💛'. Only this text string should change; no other UI, layout, or feature modifications are permitted.",
+      "text": "In `frontend/index.html`, add efficient Google Fonts `<link>` preconnect and stylesheet tags to load the following fonts: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, and Cinzel Decorative (as the fallback for Castellar). Use `font-display=swap` and load only the necessary weights to avoid performance regressions. Do not remove any existing font imports.",
       "target": "frontend",
       "source": {
         "messageIds": [
           "msg-4"
         ],
         "quotes": [
-          "Update \"Good morning 👋\" with \"Hi Dev...💛\""
+          "Load fonts efficiently (avoid slowing the app).",
+          "If the platform supports external fonts, load Cinzel Decorative (Google Font) as the closest fallback."
         ]
       },
       "acceptanceCriteria": [
-        "The home page displays 'Hi Dev...💛' instead of 'Good morning 👋'.",
-        "No other text, layout, styling, or functionality on any page is changed."
+        "All 11 Google Fonts (Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, Cinzel Decorative) are linked in index.html with preconnect hints and font-display=swap.",
+        "Existing font imports in index.html are preserved unchanged.",
+        "Page load performance is not meaningfully degraded (fonts load asynchronously)."
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "In `frontend/tailwind.config.js`, extend the `fontFamily` configuration to include all new font families: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, and Castellar (with stack: `'Castellar', 'Cinzel Decorative', 'Cinzel', serif`). Do not remove or rename any existing font family entries.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Implement it as: \"Castellar\", \"Cinzel Decorative\", \"Cinzel\", serif"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All 12 font families are defined in tailwind.config.js fontFamily section.",
+        "Castellar entry uses the fallback stack: 'Castellar', 'Cinzel Decorative', 'Cinzel', serif.",
+        "No existing font family entries are removed or altered."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "In `frontend/src/utils/storage.ts`, ensure the existing typed localStorage getter/setter for `fontFamily` supports all 12 new font values (Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, Castellar) in addition to any existing values. Do not change the storage key or mechanism.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Persist the chosen font using the same storage method already used by app settings."
+        ]
+      },
+      "acceptanceCriteria": [
+        "The fontFamily localStorage utility accepts and returns all 12 new font name strings.",
+        "Existing font values and the storage key are unchanged.",
+        "No other storage utilities are modified."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "In `frontend/src/store/appStore.ts`, extend the font options list/enum used by the global appearance store to include all 12 new fonts (Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, Castellar). When a font is selected, apply it to the DOM (e.g., via a CSS variable or class on `<html>`/`<body>`) consistently with how the existing font application works. Do not change the default font value or any other store behavior.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Apply the selected font consistently across the whole app (or only to the configurable section if the app currently limits font styling—follow existing behavior).",
+          "Keep the current default font exactly the same (do not change how the app looks unless the user selects a new font)."
+        ]
+      },
+      "acceptanceCriteria": [
+        "All 12 new fonts are listed as valid options in the appStore font configuration.",
+        "Selecting a font applies it to the app using the same DOM mechanism as existing fonts.",
+        "The default font is unchanged; app appearance is identical to before unless a new font is explicitly selected.",
+        "No existing font options or store logic is removed."
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "text": "In `frontend/src/pages/SettingsPage.tsx`, add a 'Font Family' dropdown/selector in the existing font settings section. The selector must list all existing font options plus the 12 new ones: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, and Castellar. Selecting a font updates the appStore and persists via the existing localStorage mechanism. Do not change the layout, styling, labels, or any other UI elements on the page. Do not remove existing font options.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "In the existing customization/settings area where text styling is configured (e.g., quote text style or theme settings), add a \"Font Family\" selector/dropdown.",
+          "Do not remove any existing font options (if any). Only ADD more."
+        ]
+      },
+      "acceptanceCriteria": [
+        "A 'Font Family' dropdown is present in the settings page font section.",
+        "The dropdown lists all 12 new fonts plus any previously existing font options.",
+        "Selecting a font immediately applies it to the app and persists the choice in localStorage.",
+        "The default font is pre-selected on first load (no visual change from before).",
+        "No other UI elements on SettingsPage are altered (no layout, styling, or label changes)."
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "text": "In `frontend/src/pages/QuotePage.tsx`, if the quote widget's font selector already exists, extend it with the same 12 new font options (Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, Castellar) without removing existing options or changing any other part of the UI. If the font selector on this page is separate from the global settings font, add the options there as well, consistent with existing behavior.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "In the existing customization/settings area where text styling is configured (e.g., quote text style or theme settings), add a \"Font Family\" selector/dropdown.",
+          "Do not remove any existing font options (if any). Only ADD more."
+        ]
+      },
+      "acceptanceCriteria": [
+        "QuotePage font selector includes all 12 new font options in addition to any existing ones.",
+        "No existing font options on QuotePage are removed.",
+        "No other UI elements on QuotePage are changed."
       ]
     }
   ],
   "constraints": [
-    "Do not change any UI layout, styling, colors, or other features.",
-    "Do not rename any components, files, or variables.",
-    "Only the specified greeting string must be modified."
+    "Do NOT change any existing UI layout, visual styling, component structure, or feature behavior.",
+    "Do NOT rename any existing settings, labels, or options.",
+    "Do NOT change the default font — the app must look identical to before unless the user actively selects a new font.",
+    "Do NOT remove any existing font options anywhere in the app.",
+    "Castellar must use the fallback font stack: 'Castellar', 'Cinzel Decorative', 'Cinzel', serif.",
+    "Font loading must use Google Fonts with font-display=swap for performance.",
+    "Font persistence must use the same localStorage mechanism already in place."
   ],
   "nonGoals": [
-    "Any other text or copy changes.",
-    "Layout or visual design updates.",
-    "Feature additions or removals.",
-    "Backend changes."
+    "Changing any existing app UI, layout, colors, or component styling.",
+    "Adding any new features beyond the Font Family selector.",
+    "Changing the backend in any way.",
+    "Replacing or removing existing font options.",
+    "Changing the default selected font.",
+    "Using any font loading mechanism other than Google Fonts for web fonts."
   ],
   "imageRequirements": {
     "required": [],

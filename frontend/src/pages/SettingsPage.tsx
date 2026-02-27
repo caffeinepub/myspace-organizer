@@ -8,7 +8,36 @@ import { showSuccessToast, showErrorToast, showInfoToast } from '../store/toastS
 import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
 
-const FONT_OPTIONS = ['Inter', 'Poppins', 'Roboto', 'Open Sans'];
+const FONT_OPTIONS = [
+  'Inter',
+  'Poppins',
+  'Roboto',
+  'Open Sans',
+  'Montserrat',
+  'Lato',
+  'Nunito',
+  'Playfair Display',
+  'Merriweather',
+  'Source Sans 3',
+  'JetBrains Mono',
+  'Castellar',
+];
+
+const FONT_FAMILY_MAP: Record<string, string> = {
+  'Inter': 'Inter, sans-serif',
+  'Poppins': 'Poppins, sans-serif',
+  'Roboto': 'Roboto, sans-serif',
+  'Open Sans': 'Open Sans, sans-serif',
+  'Montserrat': 'Montserrat, sans-serif',
+  'Lato': 'Lato, sans-serif',
+  'Nunito': 'Nunito, sans-serif',
+  'Playfair Display': 'Playfair Display, serif',
+  'Merriweather': 'Merriweather, serif',
+  'Source Sans 3': 'Source Sans 3, sans-serif',
+  'JetBrains Mono': 'JetBrains Mono, monospace',
+  'Castellar': 'Castellar, "Cinzel Decorative", Cinzel, serif',
+};
+
 const ACCENT_OPTIONS = [
   { id: 'amber', label: 'Amber', color: '#f59e0b' },
   { id: 'teal', label: 'Teal', color: '#14b8a6' },
@@ -223,21 +252,23 @@ export function SettingsPage() {
           <p className="text-sm font-medium mb-2 flex items-center gap-1.5">
             <Type className="w-3.5 h-3.5" /> Font Family
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <select
+            value={fontFamily}
+            onChange={e => setFont(e.target.value)}
+            className="w-full bg-muted/50 rounded-lg p-2 text-sm border border-border/50 outline-none focus:border-primary transition-colors"
+            aria-label="Font family"
+            style={{ fontFamily: FONT_FAMILY_MAP[fontFamily] || fontFamily }}
+          >
             {FONT_OPTIONS.map(font => (
-              <button
+              <option
                 key={font}
-                onClick={() => setFont(font)}
-                className={`py-2 px-3 rounded-lg border text-sm transition-all
-                  ${fontFamily === font ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted'}`}
-                style={{ fontFamily: font }}
-                aria-label={`Set font to ${font}`}
-                aria-pressed={fontFamily === font}
+                value={font}
+                style={{ fontFamily: FONT_FAMILY_MAP[font] || font }}
               >
                 {font}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
         </div>
       </section>
 
@@ -332,8 +363,8 @@ export function SettingsPage() {
 
       {/* Danger zone */}
       <section className="bg-card rounded-xl border border-destructive/30 p-4">
-        <h2 className="font-semibold text-sm mb-3 text-destructive flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4" /> Danger Zone
+        <h2 className="font-semibold text-sm mb-3 flex items-center gap-2 text-destructive">
+          <Trash2 className="w-4 h-4" /> Danger Zone
         </h2>
         {clearStep === 0 && (
           <Button variant="destructive" onClick={handleClearAll} className="w-full gap-2" aria-label="Clear all data">
@@ -342,25 +373,26 @@ export function SettingsPage() {
         )}
         {clearStep === 1 && (
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Are you sure? This will delete everything.</p>
+            <p className="text-xs text-muted-foreground">Are you sure? This will permanently delete all your notes, routines, records, and settings.</p>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setClearStep(0)} className="flex-1" aria-label="Cancel">Cancel</Button>
-              <Button variant="destructive" onClick={handleClearAll} className="flex-1" aria-label="Continue to confirm">Continue</Button>
+              <Button variant="outline" onClick={() => setClearStep(0)} className="flex-1" aria-label="Cancel clear">Cancel</Button>
+              <Button variant="destructive" onClick={handleClearAll} className="flex-1" aria-label="Continue clear">Continue</Button>
             </div>
           </div>
         )}
         {clearStep === 2 && (
           <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Type <strong>DELETE ALL</strong> to confirm:</p>
+            <p className="text-xs text-muted-foreground">Type <strong>DELETE ALL</strong> to confirm permanent deletion.</p>
             <input
+              type="text"
               value={clearConfirmText}
               onChange={e => setClearConfirmText(e.target.value)}
               placeholder="DELETE ALL"
-              className="w-full bg-muted/50 rounded-lg p-2 text-sm border border-border/50 outline-none"
-              aria-label="Type DELETE ALL to confirm"
+              className="w-full bg-muted/50 rounded-lg p-2 text-sm border border-border/50 outline-none focus:border-destructive transition-colors"
+              aria-label="Confirm deletion text"
             />
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => { setClearStep(0); setClearConfirmText(''); }} className="flex-1" aria-label="Cancel">Cancel</Button>
+              <Button variant="outline" onClick={() => { setClearStep(0); setClearConfirmText(''); }} className="flex-1" aria-label="Cancel clear">Cancel</Button>
               <Button variant="destructive" onClick={handleClearAll} className="flex-1" aria-label="Confirm delete all">Delete All</Button>
             </div>
           </div>

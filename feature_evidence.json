@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-the-homepage-component-frontend-src-pages-homepage-tsx-replace-the-greeting-text-good-morning-with-hi-dev-only-this-text-string-should-change-no-other-ui-layout-or-feature-modifications-are-permitted",
-      "featureTitle": "In the HomePage component (frontend/src/pages/HomePage.tsx), replace the greeting text 'Good morning 👋' with 'Hi Dev...💛'. Only this text string should change; no other UI, layout, or feature modifications are permitted.",
+      "featureId": "feature-in-frontend-index-html-add-efficient-google-fonts-link-preconnect-and-stylesheet-tags-to-load-the-following-fonts-inter-poppins-montserrat-roboto-open-sans-lato-nunito-playfair-display-merriweather-source-sans-3-jetbrains-mono-and-cinzel-decorative-as-the-fallback-for-castellar-use-font-display-swap-and-load-only-the-necessary-weights-to-avoid-performance-regressions-do-not-remove-any-existing-font-imports",
+      "featureTitle": "In `frontend/index.html`, add efficient Google Fonts `<link>` preconnect and stylesheet tags to load the following fonts: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, and Cinzel Decorative (as the fallback for Castellar). Use `font-display=swap` and load only the necessary weights to avoid performance regressions. Do not remove any existing font imports.",
       "files": [
-        "frontend/src/pages/HomePage.tsx"
+        "frontend/index.html"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -16,6 +16,60 @@
       ],
       "testIds": [
         "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-frontend-tailwind-config-js-extend-the-fontfamily-configuration-to-include-all-new-font-families-inter-poppins-montserrat-roboto-open-sans-lato-nunito-playfair-display-merriweather-source-sans-3-jetbrains-mono-and-castellar-with-stack-castellar-cinzel-decorative-cinzel-serif-do-not-remove-or-rename-any-existing-font-family-entries",
+      "featureTitle": "In `frontend/tailwind.config.js`, extend the `fontFamily` configuration to include all new font families: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, and Castellar (with stack: `'Castellar', 'Cinzel Decorative', 'Cinzel', serif`). Do not remove or rename any existing font family entries.",
+      "files": [
+        "frontend/tailwind.config.js"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-frontend-src-pages-settingspage-tsx-add-a-font-family-dropdown-selector-in-the-existing-font-settings-section-the-selector-must-list-all-existing-font-options-plus-the-12-new-ones-inter-poppins-montserrat-roboto-open-sans-lato-nunito-playfair-display-merriweather-source-sans-3-jetbrains-mono-and-castellar-selecting-a-font-updates-the-appstore-and-persists-via-the-existing-localstorage-mechanism-do-not-change-the-layout-styling-labels-or-any-other-ui-elements-on-the-page-do-not-remove-existing-font-options",
+      "featureTitle": "In `frontend/src/pages/SettingsPage.tsx`, add a 'Font Family' dropdown/selector in the existing font settings section. The selector must list all existing font options plus the 12 new ones: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, and Castellar. Selecting a font updates the appStore and persists via the existing localStorage mechanism. Do not change the layout, styling, labels, or any other UI elements on the page. Do not remove existing font options.",
+      "files": [
+        "frontend/src/pages/SettingsPage.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-5"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-frontend-src-pages-quotepage-tsx-if-the-quote-widget-s-font-selector-already-exists-extend-it-with-the-same-12-new-font-options-inter-poppins-montserrat-roboto-open-sans-lato-nunito-playfair-display-merriweather-source-sans-3-jetbrains-mono-castellar-without-removing-existing-options-or-changing-any-other-part-of-the-ui-if-the-font-selector-on-this-page-is-separate-from-the-global-settings-font-add-the-options-there-as-well-consistent-with-existing-behavior",
+      "featureTitle": "In `frontend/src/pages/QuotePage.tsx`, if the quote widget's font selector already exists, extend it with the same 12 new font options (Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, Castellar) without removing existing options or changing any other part of the UI. If the font selector on this page is separate from the global settings font, add the options there as well, consistent with existing behavior.",
+      "files": [
+        "frontend/src/pages/QuotePage.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-6"
       ],
       "confidence": "high"
     }
