@@ -1,0 +1,5 @@
+{
+  "frontend/src/App.tsx": "Root application component with tab-based navigation, importing NotesPage as a named export and RecordsPage as a default export, with app initialization on mount and global Toaster.",
+  "frontend/src/pages/NotesPage.tsx": "Full Google Keep-style notes page with masonry grid layout, search, label filtering, archive/trash views, multi-select bulk actions, quick-add bar, and note detail modal. Accepts optional `initialQuickAdd` prop to trigger note creation when navigated from the home page FAB.",
+  "frontend/src/index.css": "Global stylesheet defining OKLCH color tokens for light/dark modes, app-specific CSS custom properties (font, accent, background image), and component styles. Fixes the build error by replacing the invalid `@apply border-border/50` (opacity modifier unsupported in @apply) with equivalent plain CSS `border-color: oklch(var(--border) / 0.5)` in the `.note-card` rule."
+}

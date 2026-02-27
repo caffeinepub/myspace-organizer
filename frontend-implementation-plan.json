@@ -1,0 +1,237 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Date/Time Display Everywhere + Gold Accent Presets + Consistent Accent Application",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "summary": "Create a shared utility function formatDateTime that returns dates in 'DD MMM YYYY, h:mm A' format with safe fallback for invalid inputs",
+      "acceptanceCriteria": [
+        "formatDateTime('2026-02-28T03:45:00.000Z') returns a string matching 'DD MMM YYYY, h:mm A' pattern",
+        "formatDateTime('2026-02-28') returns '28 Feb 2026, 12:00 AM' (date-only fallback)",
+        "formatDateTime with an invalid input returns a non-crashing fallback string"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/utils/formatDateTime.ts",
+          "operation": "create",
+          "description": "Create a utility function formatDateTime(ts: string | number | Date): string that parses the input timestamp and returns a formatted string in 'DD MMM YYYY, h:mm A' format. Handle date-only strings by defaulting time to 12:00 AM. Wrap all parsing logic in try/catch to return a safe fallback string ('Invalid Date') on any error. Use the Intl.DateTimeFormat API or date-fns for robust formatting."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Replace all bare date-only displays throughout the app with calls to formatDateTime and ensure new timestamps are stored as ISO strings",
+      "acceptanceCriteria": [
+        "Every timestamp visible in the UI shows both date and time in 'DD MMM YYYY, h:mm A' format",
+        "Streak last check-in on StreakWidget and StreakPage shows date + time",
+        "Record created-at in RecordsPage shows date + time",
+        "Note created/updated in NoteCard and NoteModal shows date + time",
+        "Export/import success messages in SettingsPage include formatted date + time",
+        "No runtime errors when existing records have date-only stored values"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/home/StreakWidget.tsx",
+          "operation": "modify",
+          "description": "Import formatDateTime from utils/formatDateTime.ts. Replace any bare date display for the last check-in timestamp with formatDateTime(lastCheckIn). Ensure the timestamp is displayed in the widget subtitle or description area."
+        },
+        {
+          "path": "frontend/src/pages/StreakPage.tsx",
+          "operation": "modify",
+          "description": "Import formatDateTime from utils/formatDateTime.ts. Update the display of the last check-in timestamp to use formatDateTime(streakData.lastCheckIn). Ensure the formatted date+time appears near the check-in stats."
+        },
+        {
+          "path": "frontend/src/pages/RecordsPage.tsx",
+          "operation": "modify",
+          "description": "Import formatDateTime from utils/formatDateTime.ts. In the records list rendering, replace any record.createdAt display with formatDateTime(record.createdAt). Ensure the formatted timestamp is visible in each record card or row. Also verify that new records are created with createdAt: new Date().toISOString()."
+        },
+        {
+          "path": "frontend/src/pages/RoutinesPage.tsx",
+          "operation": "modify",
+          "description": "Import formatDateTime from utils/formatDateTime.ts. Update any routine item created/updated timestamp displays to use formatDateTime. If routine items have a lastUpdated or createdAt field shown in the UI, format it. Ensure new routine items store timestamps as new Date().toISOString()."
+        },
+        {
+          "path": "frontend/src/components/notes/NoteCard.tsx",
+          "operation": "modify",
+          "description": "Import formatDateTime from utils/formatDateTime.ts. Replace any note.createdAt, note.updatedAt, or note.reminderTime displays with formatDateTime(note.createdAt), formatDateTime(note.updatedAt), and formatDateTime(note.reminderTime) respectively. Ensure the formatted timestamps appear in the card footer or metadata section."
+        },
+        {
+          "path": "frontend/src/components/notes/NoteModal.tsx",
+          "operation": "modify",
+          "description": "Import formatDateTime from utils/formatDateTime.ts. Update the modal to display note.createdAt, note.updatedAt, and note.reminderTime using formatDateTime. Ensure reminder scheduling still stores timestamps as ISO strings (new Date(...).toISOString()). Display formatted timestamps in the modal header, footer, or reminder section."
+        },
+        {
+          "path": "frontend/src/pages/SettingsPage.tsx",
+          "operation": "modify",
+          "description": "Import formatDateTime from utils/formatDateTime.ts. In the export/import success toast messages, include the formatted current timestamp using formatDateTime(new Date()). For example, success messages like 'Data exported successfully at [timestamp]' or 'Data imported successfully at [timestamp]'. Ensure all data operations log timestamps as ISO strings."
+        },
+        {
+          "path": "frontend/src/hooks/useNotes.ts",
+          "operation": "modify",
+          "description": "Review note creation and update logic. Ensure all note objects set createdAt and updatedAt fields using new Date().toISOString(). Update the createNote and updateNote functions to always store ISO string timestamps."
+        },
+        {
+          "path": "frontend/src/hooks/useRecords.ts",
+          "operation": "modify",
+          "description": "Review record creation logic. Ensure new records are created with createdAt: new Date().toISOString(). Verify the addRecord function stores ISO string timestamps."
+        },
+        {
+          "path": "frontend/src/hooks/useRoutines.ts",
+          "operation": "modify",
+          "description": "Review routine item creation and update logic. Ensure any timestamp fields (createdAt, updatedAt) are stored as new Date().toISOString(). Update addRoutineItem and updateRoutineItem functions accordingly."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Add five gold/yellow accent color presets to the accent color picker in SettingsPage with immediate application and default to Gold if no user preference exists",
+      "acceptanceCriteria": [
+        "Settings page accent color section shows 5 labeled gold/yellow preset swatches",
+        "Clicking a swatch updates the accent color immediately across the UI",
+        "Selected swatch is visually highlighted/active",
+        "On first load with no saved preference, accent defaults to #D4AF37",
+        "Accent persists across page reloads via localStorage"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/SettingsPage.tsx",
+          "operation": "modify",
+          "description": "In the accent color picker section, add five preset color swatches with labels: 'Gold' (#D4AF37), 'Golden Yellow' (#FFC300), 'Amber Gold' (#FFB000), 'Deep Gold' (#B8860B), 'Warm Yellow' (#FFD54A). Render each as a clickable button displaying the color swatch and label. When clicked, call appStore.setAccent(colorHex) to update the accent. Highlight the currently selected swatch with a border or ring. Ensure the default accent is #D4AF37 if localStorage has no saved value (handled in appStore initialization)."
+        },
+        {
+          "path": "frontend/src/store/appStore.ts",
+          "operation": "modify",
+          "description": "Update the initial state for accent color: if no value is found in localStorage, default to '#D4AF37' (Gold). Ensure setAccent persists the new value to localStorage and calls applyAccent to update the DOM immediately. Verify the applyAccent function sets the CSS custom property --accent on the document root."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Ensure gold accent colors are readable in both light and dark mode by using dark text on bright accents and adding subtle borders/shadows with derived hover/active states",
+      "acceptanceCriteria": [
+        "Accent-colored buttons using bright gold (#FFC300, #FFD54A) display dark text in light mode",
+        "Accent-colored buttons have visible hover and active state changes",
+        "Bright accent buttons have a subtle border or shadow in light mode for definition",
+        "Dark mode accent buttons remain legible"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "Add utility classes or inline style rules for accent-colored buttons. For bright accents (#FFC300, #FFD54A), apply dark text color (e.g., #1a1a1a) when the theme is light. Add a subtle box-shadow or border (e.g., 0 0 0 1px rgba(0,0,0,0.1)) to bright accent buttons in light mode for definition. Define hover and active states using filter: brightness(0.88) or a computed darker variant. Ensure dark mode buttons remain legible by keeping white/light text on darker accents."
+        },
+        {
+          "path": "frontend/src/store/appStore.ts",
+          "operation": "modify",
+          "description": "In the applyAccent function, add logic to detect if the current accent is bright (#FFC300, #FFD54A, #FFB000) and set a custom property --accent-text-color to either #1a1a1a (light mode bright accent) or white/current theme text (dark mode or darker accent). This allows button components to reference var(--accent-text-color) for text color."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Introduce three CSS custom properties (--accent, --accent-2, --accent-soft) on :root and update theme logic to compute and set all three whenever the accent changes",
+      "acceptanceCriteria": [
+        "`--accent`, `--accent-2`, and `--accent-soft` are present on :root when the app loads",
+        "Changing the accent color updates all three variables immediately",
+        "Components using `var(--accent)` reflect the current user selection"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/index.css",
+          "operation": "modify",
+          "description": "In the :root selector, declare three new CSS custom properties: --accent (default #D4AF37), --accent-2 (a darker variant, e.g., #B8931F), and --accent-soft (the accent at 15% opacity, e.g., rgba(212,175,55,0.15)). These will be overridden at runtime by the appStore applyAccent function."
+        },
+        {
+          "path": "frontend/index.css",
+          "operation": "modify",
+          "description": "If this file also declares :root variables, add the same three custom properties: --accent, --accent-2, --accent-soft. Ensure consistency with frontend/src/index.css."
+        },
+        {
+          "path": "frontend/src/store/appStore.ts",
+          "operation": "modify",
+          "description": "Update the applyAccent function to compute and set three CSS custom properties on document.documentElement.style: --accent (the chosen hex), --accent-2 (the accent darkened by ~15%, computed via a utility function or CSS color-mix if supported), and --accent-soft (the accent at 15% opacity, e.g., accent with alpha 0.15 in rgba or using CSS color-mix). Ensure these are set immediately whenever setAccent is called."
+        }
+      ]
+    },
+    {
+      "id": "REQ-6",
+      "summary": "Apply the accent color consistently across all primary interactive and visual elements by replacing hardcoded colors with var(--accent) references",
+      "acceptanceCriteria": [
+        "Primary CTA buttons use `var(--accent)` for background",
+        "Active bottom tab and sidebar nav item uses `var(--accent)` for indicator/highlight",
+        "Selected filter chips use `var(--accent-soft)` background with `var(--accent)` border or text",
+        "Streak ring/circle stroke or fill uses `var(--accent)`",
+        "Routine timeline markers use `var(--accent)`",
+        "Changing accent color in settings updates all these elements immediately"
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/components/layout/BottomTabBar.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded active tab indicator color (e.g., border, background, or icon color) with inline styles or classes using var(--accent). For example, set the active tab's bottom border or background to var(--accent). Ensure the indicator updates immediately when the accent changes."
+        },
+        {
+          "path": "frontend/src/components/layout/AppSidebar.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded active nav item highlight (e.g., border-left, background, or icon color) with var(--accent). Apply inline style={{ borderLeftColor: 'var(--accent)' }} or className with CSS var(--accent) for the active nav button."
+        },
+        {
+          "path": "frontend/src/components/home/StreakWidget.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded streak ring/circle stroke or fill color with var(--accent). If the streak ring is an SVG circle, set stroke='var(--accent)' or use inline style. Ensure the ring color updates immediately when the accent changes."
+        },
+        {
+          "path": "frontend/src/pages/StreakPage.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded streak ring/circle or progress indicator color with var(--accent). Ensure the check-in button (if styled as a primary CTA) uses var(--accent) for background."
+        },
+        {
+          "path": "frontend/src/pages/RoutinesPage.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded routine timeline marker or dot color with var(--accent). If timeline markers are rendered as colored circles or bars, set their background or border to var(--accent). Ensure primary action buttons (Add Routine Item) use var(--accent) for background."
+        },
+        {
+          "path": "frontend/src/pages/NotesPage.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded primary CTA button colors (Add Note, quick-add FAB) with var(--accent) for background. Replace selected filter chip backgrounds with var(--accent-soft) and borders/text with var(--accent). Ensure the quick-add bar buttons use var(--accent) for active state."
+        },
+        {
+          "path": "frontend/src/pages/RecordsPage.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded primary CTA button colors (Add Record, Export) with var(--accent) for background. Ensure filter chips or date-range selectors use var(--accent-soft) for selected state background."
+        },
+        {
+          "path": "frontend/src/pages/SettingsPage.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded primary CTA button colors (Save, Export, Import, Clear All) with var(--accent) for background. Ensure the accent color picker swatches and other interactive elements use var(--accent) for highlights."
+        },
+        {
+          "path": "frontend/src/pages/QuotePage.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded primary CTA button colors (Save Quote) with var(--accent) for background."
+        },
+        {
+          "path": "frontend/src/pages/HomePage.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded primary CTA button colors (quick-add FAB, if present) with var(--accent) for background. Ensure widget borders or highlights use var(--accent) if applicable."
+        },
+        {
+          "path": "frontend/src/components/notes/NoteModal.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded primary action button colors (Save, Delete) with var(--accent) for background. Replace selected label chip backgrounds with var(--accent-soft) and borders/text with var(--accent)."
+        },
+        {
+          "path": "frontend/src/components/notes/QuickAddBar.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded button colors for note type selection with var(--accent) for active/selected state background."
+        },
+        {
+          "path": "frontend/src/components/streak/CheckInButton.tsx",
+          "operation": "modify",
+          "description": "Replace any hardcoded check-in button color with var(--accent) for background. Ensure the button uses var(--accent) for the active/enabled state."
+        }
+      ]
+    }
+  ]
+}

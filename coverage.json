@@ -1,0 +1,142 @@
+{
+  "kind": "coverage_report",
+  "version": "1.0",
+  "generatedAt": "2026-02-27T22:23:37.238Z",
+  "sources": {
+    "buildRequest": true,
+    "implementationPlan": true
+  },
+  "requirements": {
+    "total": 6,
+    "implemented": 6,
+    "items": [
+      {
+        "id": "REQ-1",
+        "summary": "Create a shared utility function `formatDateTime(ts: string | number | Date): string` in `frontend/src/utils/formatDateTime.ts` that returns dates in 'DD MMM YYYY, h:mm A' format (e.g. '28 Feb 2026, 3:45 AM'). If the input is a date-only string (no time component), default the time to 12:00 AM. The function must never throw — wrap parsing in a try/catch and return a safe fallback string on error.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/utils/formatDateTime.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/utils/formatDateTime.ts"
+        ]
+      },
+      {
+        "id": "REQ-2",
+        "summary": "Replace all bare date-only displays throughout the app with calls to `formatDateTime`. Specifically update: streak last check-in timestamp in `StreakWidget.tsx` and `StreakPage.tsx`; record created-at in `RecordsPage.tsx`; routine item created/updated timestamps in `RoutinesPage.tsx`; note timestamps (created, updated, reminder) in `NoteCard.tsx` and `NoteModal.tsx`; todo due/created dates; habit log entries; export/import log messages in `SettingsPage.tsx`. Also ensure new timestamps are stored as `new Date().toISOString()` wherever a timestamp is written to IndexedDB.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/home/StreakWidget.tsx",
+          "frontend/src/pages/StreakPage.tsx",
+          "frontend/src/pages/RecordsPage.tsx",
+          "frontend/src/pages/RoutinesPage.tsx",
+          "frontend/src/components/notes/NoteCard.tsx",
+          "frontend/src/components/notes/NoteModal.tsx",
+          "frontend/src/pages/SettingsPage.tsx",
+          "frontend/src/hooks/useNotes.ts",
+          "frontend/src/hooks/useRecords.ts",
+          "frontend/src/hooks/useRoutines.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/StreakPage.tsx",
+          "frontend/src/pages/RecordsPage.tsx",
+          "frontend/src/pages/RoutinesPage.tsx",
+          "frontend/src/pages/SettingsPage.tsx"
+        ]
+      },
+      {
+        "id": "REQ-3",
+        "summary": "Add five gold/yellow accent color presets to the accent color picker in `SettingsPage.tsx`: Gold (#D4AF37), Golden Yellow (#FFC300), Amber Gold (#FFB000), Deep Gold (#B8860B), Warm Yellow (#FFD54A). Each preset must render as a clickable color swatch button with its label. When selected, the accent color must be saved to localStorage and applied immediately across the UI. If no user preference exists in localStorage, default the accent to Gold (#D4AF37).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/pages/SettingsPage.tsx",
+          "frontend/src/store/appStore.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/pages/SettingsPage.tsx",
+          "frontend/src/store/appStore.ts"
+        ]
+      },
+      {
+        "id": "REQ-4",
+        "summary": "Ensure gold accent colors are readable in both light and dark mode. For bright accents (#FFC300, #FFD54A) on white/light backgrounds, use dark text (#1a1a1a or similar) on accent-colored buttons instead of white text. Add a subtle box-shadow or border to bright accent buttons to maintain definition on light backgrounds. Derive hover and active states by darkening the accent color by ~10–15% (can be done via CSS `filter: brightness(0.88)` or a computed darker hex).",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/index.css",
+          "frontend/src/store/appStore.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/store/appStore.ts"
+        ]
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Introduce three CSS custom properties on the `:root` (and updated in the theme logic / `appStore.ts`): `--accent` (the chosen accent hex), `--accent-2` (the accent darkened ~15% for hover/secondary use), and `--accent-soft` (the accent at ~15% opacity for backgrounds/chips). Update `frontend/src/index.css` and `frontend/index.css` to declare these variables. Update `appStore.ts` `applyAccent` (or equivalent) to compute and set all three variables on the document root whenever the accent changes.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/index.css",
+          "frontend/index.css",
+          "frontend/src/store/appStore.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/store/appStore.ts"
+        ]
+      },
+      {
+        "id": "REQ-6",
+        "summary": "Apply the accent color consistently across all primary interactive and visual elements by replacing hardcoded color classes with `var(--accent)` references (inline styles or CSS classes). Elements to update: primary CTA buttons (Add, Save, Check In, Export, Import), active nav tab indicator in `BottomTabBar.tsx` and `AppSidebar.tsx`, selected/active chip backgrounds in filters and label selectors, progress bars and progress highlights, the streak ring/circle in `StreakWidget.tsx` and `StreakPage.tsx`, and routine timeline markers/dots in `RoutinesPage.tsx`.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/components/layout/BottomTabBar.tsx",
+          "frontend/src/components/layout/AppSidebar.tsx",
+          "frontend/src/components/home/StreakWidget.tsx",
+          "frontend/src/pages/StreakPage.tsx",
+          "frontend/src/pages/RoutinesPage.tsx",
+          "frontend/src/pages/NotesPage.tsx",
+          "frontend/src/pages/RecordsPage.tsx",
+          "frontend/src/pages/SettingsPage.tsx",
+          "frontend/src/pages/QuotePage.tsx",
+          "frontend/src/pages/HomePage.tsx",
+          "frontend/src/components/notes/NoteModal.tsx",
+          "frontend/src/components/notes/QuickAddBar.tsx",
+          "frontend/src/components/streak/CheckInButton.tsx"
+        ],
+        "matchedFiles": [
+          "frontend/src/components/layout/BottomTabBar.tsx",
+          "frontend/src/components/layout/AppSidebar.tsx",
+          "frontend/src/pages/StreakPage.tsx",
+          "frontend/src/pages/RoutinesPage.tsx",
+          "frontend/src/pages/RecordsPage.tsx",
+          "frontend/src/pages/SettingsPage.tsx",
+          "frontend/src/pages/QuotePage.tsx",
+          "frontend/src/pages/HomePage.tsx"
+        ]
+      }
+    ]
+  },
+  "changedFiles": [
+    "build-request.json",
+    "build-template/README.md",
+    "feature_evidence.json",
+    "frontend-file-summaries.txt",
+    "frontend-implementation-plan.json",
+    "frontend/src/App.tsx",
+    "frontend/src/components/layout/AppHeader.tsx",
+    "frontend/src/components/layout/AppLayout.tsx",
+    "frontend/src/components/layout/AppSidebar.tsx",
+    "frontend/src/components/layout/BottomTabBar.tsx",
+    "frontend/src/pages/HomePage.tsx",
+    "frontend/src/pages/QuotePage.tsx",
+    "frontend/src/pages/RecordsPage.tsx",
+    "frontend/src/pages/RoutinesPage.tsx",
+    "frontend/src/pages/SettingsPage.tsx",
+    "frontend/src/pages/StreakPage.tsx",
+    "frontend/src/store/appStore.ts",
+    "frontend/src/store/dataStore.ts",
+    "frontend/src/utils/formatDateTime.ts",
+    "project_state.json",
+    "scratch/component-selection.json",
+    "spec.md",
+    "spec_vs_diff_report.json"
+  ]
+}

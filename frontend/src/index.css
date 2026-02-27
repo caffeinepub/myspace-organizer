@@ -1,0 +1,220 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* Light mode - clean warm whites with amber accent */
+    --background: 0.98 0.005 85;
+    --foreground: 0.15 0.02 250;
+    --card: 1 0 0;
+    --card-foreground: 0.15 0.02 250;
+    --popover: 1 0 0;
+    --popover-foreground: 0.15 0.02 250;
+    --primary: 0.72 0.18 55;
+    --primary-foreground: 0.98 0.01 85;
+    --secondary: 0.94 0.01 250;
+    --secondary-foreground: 0.25 0.02 250;
+    --muted: 0.94 0.01 250;
+    --muted-foreground: 0.52 0.02 250;
+    --accent: 0.72 0.18 55;
+    --accent-foreground: 0.98 0.01 85;
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+    --border: 0.88 0.01 250;
+    --input: 0.88 0.01 250;
+    --ring: 0.72 0.18 55;
+    --chart-1: 0.72 0.18 55;
+    --chart-2: 0.65 0.15 180;
+    --chart-3: 0.55 0.12 250;
+    --chart-4: 0.75 0.15 130;
+    --chart-5: 0.65 0.18 30;
+    --sidebar: 0.96 0.008 250;
+    --sidebar-foreground: 0.15 0.02 250;
+    --sidebar-primary: 0.72 0.18 55;
+    --sidebar-primary-foreground: 0.98 0.01 85;
+    --sidebar-accent: 0.92 0.01 250;
+    --sidebar-accent-foreground: 0.25 0.02 250;
+    --sidebar-border: 0.88 0.01 250;
+    --sidebar-ring: 0.72 0.18 55;
+
+    /* App-specific tokens */
+    --app-font: 'Inter', sans-serif;
+    --app-accent: oklch(0.72 0.18 55);
+    --app-bg-image: none;
+  }
+
+  .dark {
+    --background: 0.12 0.015 250;
+    --foreground: 0.95 0.01 85;
+    --card: 0.17 0.015 250;
+    --card-foreground: 0.95 0.01 85;
+    --popover: 0.20 0.015 250;
+    --popover-foreground: 0.95 0.01 85;
+    --primary: 0.75 0.19 55;
+    --primary-foreground: 0.12 0.015 250;
+    --secondary: 0.22 0.015 250;
+    --secondary-foreground: 0.90 0.01 85;
+    --muted: 0.22 0.015 250;
+    --muted-foreground: 0.60 0.01 250;
+    --accent: 0.75 0.19 55;
+    --accent-foreground: 0.12 0.015 250;
+    --destructive: 0.65 0.22 25;
+    --destructive-foreground: 0.95 0.01 85;
+    --border: 0.25 0.015 250;
+    --input: 0.25 0.015 250;
+    --ring: 0.75 0.19 55;
+    --chart-1: 0.75 0.19 55;
+    --chart-2: 0.65 0.15 180;
+    --chart-3: 0.55 0.12 250;
+    --chart-4: 0.75 0.15 130;
+    --chart-5: 0.65 0.18 30;
+    --sidebar: 0.15 0.015 250;
+    --sidebar-foreground: 0.95 0.01 85;
+    --sidebar-primary: 0.75 0.19 55;
+    --sidebar-primary-foreground: 0.12 0.015 250;
+    --sidebar-accent: 0.20 0.015 250;
+    --sidebar-accent-foreground: 0.90 0.01 85;
+    --sidebar-border: 0.25 0.015 250;
+    --sidebar-ring: 0.75 0.19 55;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--app-font);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  body.scroll-locked {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+}
+
+@layer components {
+  .app-bg {
+    background-image: var(--app-bg-image);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+  }
+
+  .tab-active {
+    color: oklch(var(--primary));
+  }
+
+  /* note-card: avoid @apply with opacity modifiers — use plain CSS instead */
+  .note-card {
+    border-radius: 0.75rem;
+    border-width: 1px;
+    border-style: solid;
+    border-color: oklch(var(--border) / 0.5);
+    padding: 0.75rem;
+    cursor: pointer;
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+    break-inside: avoid;
+    margin-bottom: 0.75rem;
+  }
+
+  .note-card:hover {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    transform: translateY(-1px);
+  }
+
+  .masonry-grid {
+    column-gap: 0.75rem;
+  }
+
+  .masonry-grid-2 { column-count: 2; }
+  .masonry-grid-3 { column-count: 3; }
+  .masonry-grid-4 { column-count: 4; }
+
+  @media (max-width: 640px) {
+    .masonry-grid-2,
+    .masonry-grid-3,
+    .masonry-grid-4 { column-count: 2; }
+  }
+
+  .streak-fire {
+    animation: pulse-fire 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-fire {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+  .routine-item-complete {
+    opacity: 0.6;
+    text-decoration: line-through;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .slide-up {
+    animation: slideUp 0.25s ease-out;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .scale-in {
+    animation: scaleIn 0.15s ease-out;
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* Focus visible styles for accessibility */
+  :focus-visible {
+    outline: 2px solid oklch(var(--ring));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(var(--border));
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(var(--muted-foreground));
+  }
+}
