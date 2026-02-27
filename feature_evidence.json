@@ -2,8 +2,8 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-on-the-home-page-homepage-tsx-update-the-date-display-to-also-show-the-current-time-alongside-the-date-the-time-should-update-in-real-time-or-at-least-on-page-load-refresh-and-be-formatted-clearly-e-g-monday-june-10-3-45-pm",
-      "featureTitle": "On the Home page (HomePage.tsx), update the date display to also show the current time alongside the date. The time should update in real time (or at least on page load/refresh) and be formatted clearly (e.g., 'Monday, June 10 · 3:45 PM').",
+      "featureId": "feature-in-the-homepage-component-frontend-src-pages-homepage-tsx-replace-the-greeting-text-good-morning-with-hi-dev-only-this-text-string-should-change-no-other-ui-layout-or-feature-modifications-are-permitted",
+      "featureTitle": "In the HomePage component (frontend/src/pages/HomePage.tsx), replace the greeting text 'Good morning 👋' with 'Hi Dev...💛'. Only this text string should change; no other UI, layout, or feature modifications are permitted.",
       "files": [
         "frontend/src/pages/HomePage.tsx"
       ],
@@ -16,43 +16,6 @@
       ],
       "testIds": [
         "REQ-1"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-in-the-settings-page-accent-color-picker-settingspage-tsx-and-the-app-s-color-token-definitions-index-css-tailwind-config-js-appstore-ts-add-yellow-gold-and-golden-yellow-as-selectable-accent-color-options-these-should-apply-consistently-across-the-app-s-accent-colored-ui-elements-buttons-highlights-active-states-etc",
-      "featureTitle": "In the Settings page accent color picker (SettingsPage.tsx) and the app's color token definitions (index.css, tailwind.config.js, appStore.ts), add yellow, gold, and golden yellow as selectable accent color options. These should apply consistently across the app's accent-colored UI elements (buttons, highlights, active states, etc.).",
-      "files": [
-        "frontend/src/pages/SettingsPage.tsx",
-        "frontend/src/store/appStore.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-change-the-app-s-default-theme-to-light-in-appstore-ts-and-the-settings-initialization-logic-in-app-tsx-ensure-that-when-no-theme-preference-is-stored-in-localstorage-the-app-defaults-to-the-light-theme-instead-of-dark",
-      "featureTitle": "Change the app's default theme to light. In appStore.ts and the settings initialization logic in App.tsx, ensure that when no theme preference is stored in localStorage, the app defaults to the light theme instead of dark.",
-      "files": [
-        "frontend/src/store/appStore.ts"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
       ],
       "confidence": "high"
     }

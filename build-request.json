@@ -1,75 +1,36 @@
 {
   "kind": "build_request",
-  "title": "Add time to date display, gold/yellow accent colors, and default light theme",
-  "projectName": "MyOrganizer Pro",
+  "title": "Update greeting text on HomePage",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "On the Home page (HomePage.tsx), update the date display to also show the current time alongside the date. The time should update in real time (or at least on page load/refresh) and be formatted clearly (e.g., 'Monday, June 10 · 3:45 PM').",
+      "text": "In the HomePage component (frontend/src/pages/HomePage.tsx), replace the greeting text 'Good morning 👋' with 'Hi Dev...💛'. Only this text string should change; no other UI, layout, or feature modifications are permitted.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-4"
         ],
         "quotes": [
-          "add the time also in date along displayed"
+          "Update \"Good morning 👋\" with \"Hi Dev...💛\""
         ]
       },
       "acceptanceCriteria": [
-        "The home page date section displays both the current date and current time",
-        "The time format is human-readable (e.g., 12-hour with AM/PM or 24-hour)",
-        "The time updates in real time or reflects the correct time on page load"
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "In the Settings page accent color picker (SettingsPage.tsx) and the app's color token definitions (index.css, tailwind.config.js, appStore.ts), add yellow, gold, and golden yellow as selectable accent color options. These should apply consistently across the app's accent-colored UI elements (buttons, highlights, active states, etc.).",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "need yellow and gold and golden yellow color in 'accent color'"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The accent color picker in Settings shows at least three new options: Yellow, Gold, and Golden Yellow",
-        "Selecting any of the new accent colors applies it across all accent-styled UI elements app-wide",
-        "The new accent colors are defined as OKLCH or hex tokens consistent with the existing color system in index.css and tailwind.config.js",
-        "The chosen accent color persists across page reloads via localStorage"
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "Change the app's default theme to light. In appStore.ts and the settings initialization logic in App.tsx, ensure that when no theme preference is stored in localStorage, the app defaults to the light theme instead of dark.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "default to light theme"
-        ]
-      },
-      "acceptanceCriteria": [
-        "A first-time visitor (no localStorage theme value) sees the light theme",
-        "The light theme CSS variables are applied to the document root by default",
-        "Existing users with a saved theme preference are not affected — their saved choice is respected",
-        "The Settings page theme toggle reflects 'Light' as the active selection on first load"
+        "The home page displays 'Hi Dev...💛' instead of 'Good morning 👋'.",
+        "No other text, layout, styling, or functionality on any page is changed."
       ]
     }
   ],
   "constraints": [
-    "Do not modify files listed in frontend.immutablePaths: useInternetIdentity.ts, useActor.ts, main.tsx, frontend/src/components/ui",
-    "Preserve all existing accent color options — only add new yellow/gold options, do not remove or rename existing ones",
-    "Keep the OKLCH-based color token system consistent with the existing index.css and tailwind.config.js conventions"
+    "Do not change any UI layout, styling, colors, or other features.",
+    "Do not rename any components, files, or variables.",
+    "Only the specified greeting string must be modified."
   ],
   "nonGoals": [
-    "Adding a user-configurable time format setting",
-    "Changing any backend logic or data models",
-    "Redesigning the overall theme or color system beyond adding the requested accent colors"
+    "Any other text or copy changes.",
+    "Layout or visual design updates.",
+    "Feature additions or removals.",
+    "Backend changes."
   ],
   "imageRequirements": {
     "required": [],

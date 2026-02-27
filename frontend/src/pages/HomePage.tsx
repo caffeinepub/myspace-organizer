@@ -30,7 +30,7 @@ export function HomePage({ onNavigate, onQuickAddNote }: HomePageProps) {
           <span className="text-xs text-muted-foreground opacity-40">·</span>
           <p className="text-xs font-medium text-primary">{timeStr}</p>
         </div>
-        <h1 className="text-2xl font-bold mt-0.5">Good {getGreeting()} 👋</h1>
+        <h1 className="text-2xl font-bold mt-0.5">Hi Dev...💛</h1>
       </div>
 
       {/* Widgets grid */}
@@ -66,11 +66,4 @@ export function HomePage({ onNavigate, onQuickAddNote }: HomePageProps) {
       </footer>
     </div>
   );
-}
-
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'morning';
-  if (h < 17) return 'afternoon';
-  return 'evening';
 }

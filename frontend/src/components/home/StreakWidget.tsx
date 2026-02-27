@@ -1,7 +1,7 @@
 import React from 'react';
 import { Flame, ChevronRight } from 'lucide-react';
-import { format } from 'date-fns';
 import { useStreak } from '../../hooks/useStreak';
+import { formatDateTime } from '../../utils/dateFormatter';
 
 interface StreakWidgetProps {
   onNavigate: () => void;
@@ -34,7 +34,7 @@ export function StreakWidget({ onNavigate }: StreakWidgetProps) {
       <div className="mt-2 flex items-center justify-between">
         <span className="text-xs text-muted-foreground">
           {streak?.lastCheckIn
-            ? `Last: ${format(new Date(streak.lastCheckIn), 'MMM d, h:mm a')}`
+            ? `Last: ${formatDateTime(streak.lastCheckIn)}`
             : 'No check-ins yet'
           }
         </span>

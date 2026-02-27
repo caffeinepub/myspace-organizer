@@ -1,75 +1,20 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add time to date display, gold/yellow accent colors, and default light theme",
+  "title": "Update greeting text on HomePage",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Update home page date display to show current time alongside date with real-time updates",
+      "summary": "Replace the greeting text 'Good morning 👋' with 'Hi Dev...💛' in the HomePage component",
       "acceptanceCriteria": [
-        "The home page date section displays both the current date and current time",
-        "The time format is human-readable (e.g., 12-hour with AM/PM or 24-hour)",
-        "The time updates in real time or reflects the correct time on page load"
+        "The home page displays 'Hi Dev...💛' instead of 'Good morning 👋'.",
+        "No other text, layout, styling, or functionality on any page is changed."
       ],
       "file_operations": [
         {
           "path": "frontend/src/pages/HomePage.tsx",
           "operation": "modify",
-          "description": "Update the date display logic to include the current time alongside the date. Add state and an interval effect to update the time in real time (or at minimum on component mount). Format the display as 'Monday, June 10 · 3:45 PM' using toLocaleTimeString with 12-hour format and AM/PM, or use 24-hour format depending on locale. Ensure the interval is cleaned up on unmount to prevent memory leaks."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Add yellow, gold, and golden yellow accent color options to settings and color system",
-      "acceptanceCriteria": [
-        "The accent color picker in Settings shows at least three new options: Yellow, Gold, and Golden Yellow",
-        "Selecting any of the new accent colors applies it across all accent-styled UI elements app-wide",
-        "The new accent colors are defined as OKLCH or hex tokens consistent with the existing color system in index.css and tailwind.config.js",
-        "The chosen accent color persists across page reloads via localStorage"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/index.css",
-          "operation": "modify",
-          "description": "Add CSS custom property definitions for three new accent colors (Yellow, Gold, and Golden Yellow) using OKLCH color space, consistent with the existing accent color token system. Define these colors for both light and dark theme contexts to ensure proper contrast and visibility. Follow the existing pattern of [data-accent='colorname'] attribute selectors."
-        },
-        {
-          "path": "frontend/tailwind.config.js",
-          "operation": "modify",
-          "description": "Extend the Tailwind color configuration to include the three new accent color tokens (Yellow, Gold, and Golden Yellow) using OKLCH values that match the CSS custom properties defined in index.css. Ensure these colors are available as utility classes (e.g., bg-accent, text-accent, border-accent) throughout the app."
-        },
-        {
-          "path": "frontend/src/pages/SettingsPage.tsx",
-          "operation": "modify",
-          "description": "Add three new accent color options to the accent color picker UI: Yellow, Gold, and Golden Yellow. Update the color selection grid to include these new options with appropriate visual swatches. Ensure selecting any of these colors calls the appStore's setAccentColor method to apply the color app-wide and persist it to localStorage. Preserve all existing accent color options."
-        },
-        {
-          "path": "frontend/src/store/appStore.ts",
-          "operation": "modify",
-          "description": "Update the accent color type definition to include 'yellow', 'gold', and 'golden-yellow' as valid accent color values. Ensure the setAccentColor function can handle these new values and correctly applies the data-accent attribute to the document root element. Verify localStorage persistence works for the new accent colors."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Change the app's default theme to light when no preference is stored",
-      "acceptanceCriteria": [
-        "A first-time visitor (no localStorage theme value) sees the light theme",
-        "The light theme CSS variables are applied to the document root by default",
-        "Existing users with a saved theme preference are not affected — their saved choice is respected",
-        "The Settings page theme toggle reflects 'Light' as the active selection on first load"
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/store/appStore.ts",
-          "operation": "modify",
-          "description": "Update the initial theme state logic to default to 'light' instead of 'dark' when no theme value is found in localStorage. Modify the theme initialization in the store's create function to read from localStorage and fall back to 'light' if the stored value is null or undefined. Ensure the applyTheme helper correctly applies the light theme's CSS custom properties to the document root by default."
-        },
-        {
-          "path": "frontend/src/App.tsx",
-          "operation": "modify",
-          "description": "Review and update the settings initialization logic in the useEffect hook to ensure that when the app initializes appStore settings on first load, it respects the new light theme default. Verify that the theme is correctly read from appStore and applied to the DOM, and that existing users with a saved preference are not affected."
+          "description": "Update the greeting text string from 'Good morning 👋' to 'Hi Dev...💛'. This is a single-line text change with no other modifications to the component's layout, styling, props, state, hooks, or any other functionality."
         }
       ]
     }

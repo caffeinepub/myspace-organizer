@@ -1,58 +1,22 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Project with date/time display, gold/yellow accent colors, and light theme as default.",
+  "summary": "New project",
   "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-on-the-home-page-homepage-tsx-update-the-date-display-to-also-show-the-current-time-alongside-the-date-the-time-should-update-in-real-time-or-at-least-on-page-load-refresh-and-be-formatted-clearly-e-g-monday-june-10-3-45-pm",
-      "title": "On the Home page (HomePage.tsx), update the date display to also show the current time alongside the date. The time should update in real time (or at least on page load/refresh) and be formatted clearly (e.g., 'Monday, June 10 · 3:45 PM').",
+      "id": "feature-in-the-homepage-component-frontend-src-pages-homepage-tsx-replace-the-greeting-text-good-morning-with-hi-dev-only-this-text-string-should-change-no-other-ui-layout-or-feature-modifications-are-permitted",
+      "title": "In the HomePage component (frontend/src/pages/HomePage.tsx), replace the greeting text 'Good morning 👋' with 'Hi Dev...💛'. Only this text string should change; no other UI, layout, or feature modifications are permitted.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
-    },
-    {
-      "id": "feature-in-the-settings-page-accent-color-picker-settingspage-tsx-and-the-app-s-color-token-definitions-index-css-tailwind-config-js-appstore-ts-add-yellow-gold-and-golden-yellow-as-selectable-accent-color-options-these-should-apply-consistently-across-the-app-s-accent-colored-ui-elements-buttons-highlights-active-states-etc",
-      "title": "In the Settings page accent color picker (SettingsPage.tsx) and the app's color token definitions (index.css, tailwind.config.js, appStore.ts), add yellow, gold, and golden yellow as selectable accent color options. These should apply consistently across the app's accent-colored UI elements (buttons, highlights, active states, etc.).",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-change-the-app-s-default-theme-to-light-in-appstore-ts-and-the-settings-initialization-logic-in-app-tsx-ensure-that-when-no-theme-preference-is-stored-in-localstorage-the-app-defaults-to-the-light-theme-instead-of-dark",
-      "title": "Change the app's default theme to light. In appStore.ts and the settings initialization logic in App.tsx, ensure that when no theme preference is stored in localStorage, the app defaults to the light theme instead of dark.",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Add time display alongside date",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Add yellow, gold, and golden yellow options to accent color picker",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Set light theme as the default theme",
-      "reqIds": [],
-      "status": "pending"
-    }
-  ],
-  "gameProjectType": "none",
-  "projectName": "MyOrganizer Pro",
+  "new_feature_requests": [],
+  "projectName": "Update greeting text on HomePage",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

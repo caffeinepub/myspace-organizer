@@ -3,7 +3,7 @@ import { Search, Plus, Download, X, Pencil, Trash2, BookOpen, Calendar } from 'l
 import { useRecords } from '../hooks/useRecords';
 import { Modal } from '../components/common/Modal';
 import type { Record } from '../db/schema';
-import { format } from 'date-fns';
+import { formatDateTime } from '../utils/dateFormatter';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -150,7 +150,7 @@ export function RecordsPage() {
                   <div className="flex items-center gap-1 mt-2">
                     <Calendar className="w-3 h-3 text-muted-foreground/60" />
                     <span className="text-[10px] text-muted-foreground">
-                      {format(new Date(record.createdAt), 'MMM d, yyyy · h:mm a')}
+                      {formatDateTime(record.createdAt)}
                     </span>
                   </div>
                 </div>

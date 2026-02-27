@@ -1,10 +1,10 @@
 import React from 'react';
-import { format } from 'date-fns';
 import { ArrowLeft, Flame } from 'lucide-react';
 import { useStreak } from '../hooks/useStreak';
 import { CheckInButton } from '../components/streak/CheckInButton';
 import { StreakCalendar } from '../components/streak/StreakCalendar';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { formatDateTime } from '../utils/dateFormatter';
 
 interface StreakPageProps {
   onBack: () => void;
@@ -37,7 +37,7 @@ export function StreakPage({ onBack }: StreakPageProps) {
         />
         {streak?.lastCheckIn && (
           <p className="text-xs text-muted-foreground mt-4">
-            Last check-in: {format(new Date(streak.lastCheckIn), 'MMM dd, yyyy hh:mm a')}
+            Last check-in: {formatDateTime(streak.lastCheckIn)}
           </p>
         )}
       </div>
