@@ -22,7 +22,7 @@ export function NotesPage({ initialQuickAdd, onQuickAddHandled }: NotesPageProps
     view, setView, selectedIds, toggleSelect, clearSelection,
     createNote, updateNote, trashNote, archiveNote, togglePin, bulkAction, restoreNote, deleteNote,
   } = useNotes();
-  const { labels } = useLabels();
+  const { labels, reload: reloadLabels } = useLabels();
 
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [showLabelManager, setShowLabelManager] = useState(false);
@@ -70,6 +70,21 @@ export function NotesPage({ initialQuickAdd, onQuickAddHandled }: NotesPageProps
     await updateNote(note);
     setSelectedNote(null);
   }, [updateNote]);
+
+  /**
+   * Called by LabelManager after a label is added, renamed, or deleted.
+   * Reloads the labels list from IndexedDB immediately and, if a rename occurred
+   * and the renamed label was the active filter, updates the filter to the new name.
+   */
+  const handleLabelsChanged = useCallback(
+    (change?: { type: 'rename'; oldName: string; newName: string }) => {
+      reloadLabels();
+      if (change?.type === 'rename' && labelFilter === change.oldName) {
+        setLabelFilter(change.newName);
+      }
+    },
+    [reloadLabels, labelFilter, setLabelFilter]
+  );
 
   if (loading) return <LoadingSpinner />;
 
@@ -191,9 +206,9 @@ export function NotesPage({ initialQuickAdd, onQuickAddHandled }: NotesPageProps
               onSelect={toggleSelect}
               onClick={handleNoteClick}
               onPin={togglePin}
-              onArchive={view === 'archive' ? restoreNote : archiveNote}
+              onArchive={view === 'trash' ? restoreNote : view === 'archive' ? restoreNote : archiveNote}
               onTrash={view === 'trash' ? deleteNote : trashNote}
-              showActions={view !== 'trash'}
+              showActions={true}
             />
           ))}
         </div>
@@ -211,7 +226,11 @@ export function NotesPage({ initialQuickAdd, onQuickAddHandled }: NotesPageProps
       />
 
       {/* Label manager modal */}
-      <LabelManager isOpen={showLabelManager} onClose={() => setShowLabelManager(false)} />
+      <LabelManager
+        isOpen={showLabelManager}
+        onClose={() => setShowLabelManager(false)}
+        onLabelsChanged={handleLabelsChanged}
+      />
     </div>
   );
 }

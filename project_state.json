@@ -1,59 +1,42 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "A notes app with configurable label/tag management. The Notes section supports user-managed labels (add, rename, delete) while preserving the 'All' label and existing filtering behavior. Labels persist using the app's existing storage system.",
-  "architectural_notes": [
-    "'All' label is permanent and cannot be renamed or deleted",
-    "Labels persist using the app's existing storage mechanism (no new storage systems)",
-    "On first run, initialize labels: All, Welcome, Work, Personal, Ideas",
-    "Deleting a label reassigns affected notes to 'All' safely"
+  "summary": "Notes app with labels and trash functionality. Fixing two bugs: (1) Notes labels not updating instantly on add/rename, (2) Permanent delete from Trash not working.",
+  "architectural_notes": [],
+  "known_issues": [
+    "Notes Labels add/rename does not update the filter bar instantly (requires page refresh)",
+    "Delete permanently from Trash does not remove the note from storage or UI instantly"
   ],
-  "known_issues": [],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-update-the-uselabels-hook-to-expose-createlabel-updatelabel-except-for-all-and-deletelabel-except-for-all-operations-when-a-label-is-deleted-all-notes-that-reference-that-label-must-be-safely-reassigned-to-all-or-have-the-label-reference-removed-without-breaking-any-existing-note-data",
-      "title": "Update the useLabels hook to expose createLabel, updateLabel (except for 'All'), and deleteLabel (except for 'All') operations. When a label is deleted, all notes that reference that label must be safely reassigned to 'All' (or have the label reference removed) without breaking any existing note data.",
+      "id": "feature-when-a-label-is-added-or-renamed-via-the-labelmanager-modal-the-notes-filter-bar-must-update-immediately-without-requiring-a-page-refresh-the-internal-labels-state-used-by-notespage-must-be-refreshed-synchronously-after-the-add-rename-operation-completes-in-indexeddb-if-the-renamed-label-is-currently-selected-as-the-active-filter-keep-it-selected-and-update-its-displayed-name-in-place-a-newly-added-label-must-appear-in-the-filter-bar-immediately",
+      "title": "When a label is added or renamed via the LabelManager modal, the Notes filter bar must update immediately without requiring a page refresh. The internal labels state used by NotesPage must be refreshed synchronously after the add/rename operation completes in IndexedDB. If the renamed label is currently selected as the active filter, keep it selected and update its displayed name in place. A newly added label must appear in the filter bar immediately.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-in-the-trash-view-of-notespage-delete-permanently-must-immediately-remove-the-targeted-note-from-indexeddb-and-from-the-displayed-note-list-without-requiring-a-page-refresh-the-note-must-not-reappear-after-a-page-refresh-any-counts-or-badges-reflecting-trashed-note-counts-must-update-immediately-after-deletion",
+      "title": "In the Trash view of NotesPage, 'Delete permanently' must immediately remove the targeted note from IndexedDB and from the displayed note list without requiring a page refresh. The note must not reappear after a page refresh. Any counts or badges reflecting trashed note counts must update immediately after deletion.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-expose-label-management-ui-through-the-existing-labelmanager-modal-component-frontend-src-components-notes-labelmanager-tsx-so-users-can-add-new-labels-rename-existing-labels-except-all-and-delete-existing-labels-except-all-do-not-change-the-notes-page-layout-label-filter-bar-appearance-or-any-other-ui-outside-of-what-is-strictly-required-for-this-management-interface",
-      "title": "Expose label management UI through the existing LabelManager modal component (frontend/src/components/notes/LabelManager.tsx) so users can add new labels, rename existing labels (except 'All'), and delete existing labels (except 'All'). Do not change the Notes page layout, label filter bar appearance, or any other UI outside of what is strictly required for this management interface.",
+      "id": "feature-if-empty-trash-exists-in-the-trash-view-it-must-permanently-delete-all-trashed-notes-from-indexeddb-and-clear-them-from-the-ui-instantly-after-the-operation-no-trashed-notes-should-appear-on-refresh-and-any-trash-count-badges-must-reset-to-zero-immediately",
+      "title": "If 'Empty Trash' exists in the Trash view, it must permanently delete all trashed notes from IndexedDB and clear them from the UI instantly. After the operation, no trashed notes should appear on refresh and any trash count badges must reset to zero immediately.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Make note labels/tags configurable: add, rename, delete (except 'All'), with persistence and safe reassignment on deletion",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Extend the backend (or existing storage layer) to persist user-defined labels. On first run, initialize with the default set: All, Welcome, Work, Personal, Ideas. The 'All' label must always exist and cannot be renamed or deleted.",
-      "reqIds": [
-        "REQ-1"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Ensure the label filter bar in NotesPage continues to read labels dynamically from the persisted labels list (via useLabels or equivalent), so newly added, renamed, or deleted labels are immediately reflected in the filter options without any page reload.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "status": "pending"
-    }
-  ],
+  "new_feature_requests": [],
   "gameProjectType": "none",
-  "projectName": "MyOrganizer Pro",
+  "projectName": "Fix: Labels instant update and Trash permanent delete",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

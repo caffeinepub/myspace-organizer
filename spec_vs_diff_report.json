@@ -1,47 +1,26 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-27T23:38:49.779Z",
-  "summary": "The diff implements most of the required label management features: useLabels hook with createLabel/updateLabel/deleteLabel, LabelManager modal UI, and backend label persistence. However, several key requirements have gaps or issues worth flagging.",
+  "generatedAt": "2026-02-27T23:55:22.501Z",
+  "summary": "The diff addresses REQ-1 (label instant update) and REQ-2 (permanent delete from trash) with reasonable coverage. REQ-1 is well-implemented: LabelManager passes rename change info via onLabelsChanged, NotesPage calls reloadLabels and updates labelFilter on rename. REQ-2 is addressed via deleteNote in useNotes.ts which removes from IndexedDB and state immediately. REQ-3 (Empty Trash) is not explicitly evidenced in the diff—no emptyTrash or bulkDelete-all-trashed function is visible in the truncated files, though it may exist in truncated portions.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "On first run (empty labels table), the five default labels — All, Welcome, Work, Personal, Ideas — are seeded using the existing IndexedDB labels table (OrganizerDB).",
-      "reason": "The seedData.ts was modified but only seeds notes/records/streaks/quotes/routines — there is no seeding of the IndexedDB labels table with the five default labels. The backend main.mo has initializeDefaultLabels() but this is a Motoko/ICP backend, not the IndexedDB labels table. The useLabels hook does not perform any seeding on first run (no empty-table check present).",
+      "id": "REQ-3",
+      "requirement": "Empty Trash must permanently delete all trashed notes from IndexedDB and clear them from the UI instantly, with trash count badges resetting to zero immediately.",
+      "reason": "No emptyTrash function, bulk-delete-all-trashed operation, or corresponding UI wiring is visible anywhere in the diff. The useNotes.ts and NotesPage.tsx diffs are truncated but no mention of 'emptyTrash', 'empty trash', or bulk permanent deletion of all trashed notes appears in the visible portions or file summaries.",
       "evidence": [
-        "frontend/src/utils/seedData.ts",
-        "frontend/src/hooks/useLabels.ts",
-        "backend/main.mo"
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "requirement": "The label filter bar in NotesPage reads labels dynamically from the persisted labels list so newly added, renamed, or deleted labels are immediately reflected without a page reload.",
-      "reason": "The diff does not show any changes to NotesPage.tsx or the label filter bar wiring. Without evidence of NotesPage consuming useLabels for its filter bar, this requirement cannot be confirmed as implemented.",
-      "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend/src/hooks/useNotes.ts",
+        "frontend/src/pages/NotesPage.tsx"
       ]
     }
   ],
-  "hallucinated_features": [
-    {
-      "description": "A useQueries.ts file with React Query hooks (useGetAllLabels, useInitializeDefaultLabels) that call a Motoko/ICP backend actor for label persistence.",
-      "reason": "The build request explicitly states to use the existing IndexedDB labels table and not introduce any new storage systems. The Motoko backend (main.mo) and React Query hooks calling it represent a new storage pathway for labels beyond the existing IndexedDB labels table, which was not requested and potentially violates the stated constraint.",
-      "evidence": [
-        "frontend/src/hooks/useQueries.ts",
-        "backend/main.mo"
-      ]
-    }
-  ],
-  "confidence": 0.72,
+  "hallucinated_features": [],
+  "confidence": 0.65,
   "changed_files": [
-    "backend/main.mo",
     "frontend-file-summaries.txt",
     "frontend/src/components/notes/LabelManager.tsx",
-    "frontend/src/hooks/useLabels.ts",
     "frontend/src/hooks/useNotes.ts",
-    "frontend/src/hooks/useQueries.ts",
-    "frontend/src/utils/seedData.ts",
+    "frontend/src/pages/NotesPage.tsx",
     "project_state.json"
   ]
 }

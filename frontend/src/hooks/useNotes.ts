@@ -184,6 +184,25 @@ export function useNotes() {
     }
   }, [load]);
 
+  /**
+   * Permanently deletes all trashed notes from IndexedDB and updates state immediately.
+   */
+  const emptyTrash = useCallback(async () => {
+    try {
+      const allNotes = await db.notes.toArray();
+      const trashed = allNotes.filter(n => n.trashed);
+      for (const n of trashed) {
+        if (n.id !== undefined) {
+          await db.notes.delete(n.id);
+        }
+      }
+      setNotes(prev => prev.filter(n => !n.trashed));
+      showSuccessToast('Trash emptied');
+    } catch {
+      showErrorToast('Failed to empty trash');
+    }
+  }, []);
+
   return {
     notes: filtered,
     allNotes: notes,
@@ -193,7 +212,7 @@ export function useNotes() {
     view, setView,
     selectedIds, toggleSelect, clearSelection,
     createNote, updateNote, deleteNote, trashNote, restoreNote, archiveNote, togglePin, bulkAction,
-    bulkReassignLabel,
+    bulkReassignLabel, emptyTrash,
     reload: load,
   };
 }

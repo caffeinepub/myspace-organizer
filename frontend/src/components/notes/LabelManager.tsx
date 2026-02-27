@@ -7,9 +7,10 @@ import type { Label } from '../../db/schema';
 interface LabelManagerProps {
   isOpen: boolean;
   onClose: () => void;
+  onLabelsChanged?: (change?: { type: 'rename'; oldName: string; newName: string }) => void;
 }
 
-export function LabelManager({ isOpen, onClose }: LabelManagerProps) {
+export function LabelManager({ isOpen, onClose, onLabelsChanged }: LabelManagerProps) {
   const { labels, createLabel, updateLabel, deleteLabel } = useLabels();
   const { bulkReassignLabel } = useNotes();
   const [newLabelName, setNewLabelName] = useState('');
@@ -27,6 +28,7 @@ export function LabelManager({ isOpen, onClose }: LabelManagerProps) {
     if (isReserved(newLabelName)) return;
     await createLabel(newLabelName.trim());
     setNewLabelName('');
+    onLabelsChanged?.();
   };
 
   const handleStartEdit = (label: Label) => {
@@ -41,9 +43,12 @@ export function LabelManager({ isOpen, onClose }: LabelManagerProps) {
     if (isReserved(editingName)) return;
     const label = labels.find(l => l.id === editingId);
     if (!label) return;
-    await updateLabel({ ...label, name: editingName.trim() });
+    const oldName = label.name;
+    const newName = editingName.trim();
+    await updateLabel({ ...label, name: newName });
     setEditingId(null);
     setEditingName('');
+    onLabelsChanged?.({ type: 'rename', oldName, newName });
   };
 
   const handleCancelEdit = () => {
@@ -64,6 +69,7 @@ export function LabelManager({ isOpen, onClose }: LabelManagerProps) {
       setIsDeleting(false);
       setConfirmDeleteId(null);
     }
+    onLabelsChanged?.();
   };
 
   const handleCancelDelete = () => {

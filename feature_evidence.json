@@ -2,11 +2,30 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-update-the-uselabels-hook-to-expose-createlabel-updatelabel-except-for-all-and-deletelabel-except-for-all-operations-when-a-label-is-deleted-all-notes-that-reference-that-label-must-be-safely-reassigned-to-all-or-have-the-label-reference-removed-without-breaking-any-existing-note-data",
-      "featureTitle": "Update the useLabels hook to expose createLabel, updateLabel (except for 'All'), and deleteLabel (except for 'All') operations. When a label is deleted, all notes that reference that label must be safely reassigned to 'All' (or have the label reference removed) without breaking any existing note data.",
+      "featureId": "feature-when-a-label-is-added-or-renamed-via-the-labelmanager-modal-the-notes-filter-bar-must-update-immediately-without-requiring-a-page-refresh-the-internal-labels-state-used-by-notespage-must-be-refreshed-synchronously-after-the-add-rename-operation-completes-in-indexeddb-if-the-renamed-label-is-currently-selected-as-the-active-filter-keep-it-selected-and-update-its-displayed-name-in-place-a-newly-added-label-must-appear-in-the-filter-bar-immediately",
+      "featureTitle": "When a label is added or renamed via the LabelManager modal, the Notes filter bar must update immediately without requiring a page refresh. The internal labels state used by NotesPage must be refreshed synchronously after the add/rename operation completes in IndexedDB. If the renamed label is currently selected as the active filter, keep it selected and update its displayed name in place. A newly added label must appear in the filter bar immediately.",
       "files": [
-        "frontend/src/hooks/useLabels.ts",
-        "frontend/src/hooks/useNotes.ts"
+        "frontend/src/components/notes/LabelManager.tsx",
+        "frontend/src/pages/NotesPage.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-in-the-trash-view-of-notespage-delete-permanently-must-immediately-remove-the-targeted-note-from-indexeddb-and-from-the-displayed-note-list-without-requiring-a-page-refresh-the-note-must-not-reappear-after-a-page-refresh-any-counts-or-badges-reflecting-trashed-note-counts-must-update-immediately-after-deletion",
+      "featureTitle": "In the Trash view of NotesPage, 'Delete permanently' must immediately remove the targeted note from IndexedDB and from the displayed note list without requiring a page refresh. The note must not reappear after a page refresh. Any counts or badges reflecting trashed note counts must update immediately after deletion.",
+      "files": [
+        "frontend/src/hooks/useNotes.ts",
+        "frontend/src/pages/NotesPage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -21,10 +40,11 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-expose-label-management-ui-through-the-existing-labelmanager-modal-component-frontend-src-components-notes-labelmanager-tsx-so-users-can-add-new-labels-rename-existing-labels-except-all-and-delete-existing-labels-except-all-do-not-change-the-notes-page-layout-label-filter-bar-appearance-or-any-other-ui-outside-of-what-is-strictly-required-for-this-management-interface",
-      "featureTitle": "Expose label management UI through the existing LabelManager modal component (frontend/src/components/notes/LabelManager.tsx) so users can add new labels, rename existing labels (except 'All'), and delete existing labels (except 'All'). Do not change the Notes page layout, label filter bar appearance, or any other UI outside of what is strictly required for this management interface.",
+      "featureId": "feature-if-empty-trash-exists-in-the-trash-view-it-must-permanently-delete-all-trashed-notes-from-indexeddb-and-clear-them-from-the-ui-instantly-after-the-operation-no-trashed-notes-should-appear-on-refresh-and-any-trash-count-badges-must-reset-to-zero-immediately",
+      "featureTitle": "If 'Empty Trash' exists in the Trash view, it must permanently delete all trashed notes from IndexedDB and clear them from the UI instantly. After the operation, no trashed notes should appear on refresh and any trash count badges must reset to zero immediately.",
       "files": [
-        "frontend/src/components/notes/LabelManager.tsx"
+        "frontend/src/hooks/useNotes.ts",
+        "frontend/src/pages/NotesPage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
