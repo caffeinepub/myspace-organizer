@@ -90,24 +90,102 @@ export class ExternalBlob {
     }
 }
 export interface backendInterface {
-    ping(): Promise<string>;
+    addLabel(id: string, name: string): Promise<boolean>;
+    deleteLabel(id: string): Promise<boolean>;
+    getAllLabels(): Promise<Array<[string, string]>>;
+    getLabel(id: string): Promise<string | null>;
+    initializeDefaultLabels(): Promise<void>;
+    renameLabel(id: string, newName: string): Promise<boolean>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
-    async ping(): Promise<string> {
+    async addLabel(arg0: string, arg1: string): Promise<boolean> {
         if (this.processError) {
             try {
-                const result = await this.actor.ping();
+                const result = await this.actor.addLabel(arg0, arg1);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.ping();
+            const result = await this.actor.addLabel(arg0, arg1);
             return result;
         }
     }
+    async deleteLabel(arg0: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteLabel(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteLabel(arg0);
+            return result;
+        }
+    }
+    async getAllLabels(): Promise<Array<[string, string]>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllLabels();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllLabels();
+            return result;
+        }
+    }
+    async getLabel(arg0: string): Promise<string | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getLabel(arg0);
+                return from_candid_opt_n1(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getLabel(arg0);
+            return from_candid_opt_n1(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async initializeDefaultLabels(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.initializeDefaultLabels();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.initializeDefaultLabels();
+            return result;
+        }
+    }
+    async renameLabel(arg0: string, arg1: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.renameLabel(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.renameLabel(arg0, arg1);
+            return result;
+        }
+    }
+}
+function from_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
+    return value.length === 0 ? null : value[0];
 }
 export interface CreateActorOptions {
     agent?: Agent;

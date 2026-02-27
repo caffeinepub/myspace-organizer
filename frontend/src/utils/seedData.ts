@@ -12,12 +12,12 @@ export async function seedDatabase(): Promise<void> {
       await db.notes.bulkAdd([
         {
           type: 'text',
-          title: 'Welcome to MyOrganizer Pro! 🎉',
-          content: 'This is your personal organizer. Use it to track streaks, manage routines, take notes, and log records. Tap any note to edit it.',
+          title: '👋 Welcome to MyOrganizer Pro!',
+          content: 'This is your personal organizer. You can create notes, track habits, manage records, and more.\n\nTips:\n• Pin important notes\n• Use labels to organize\n• Archive notes you want to keep but not see daily',
           checklistItems: [],
           imageRefs: [],
-          color: '#fff9c4',
-          labels: ['welcome'],
+          color: 'default',
+          labels: ['Welcome'],
           pinned: true,
           archived: false,
           trashed: false,
@@ -26,24 +26,34 @@ export async function seedDatabase(): Promise<void> {
           updatedAt: Date.now(),
         },
         {
-          type: 'checklist',
-          title: 'Getting Started Checklist',
-          content: '',
-          checklistItems: [
-            { id: '1', text: 'Check in your first streak', checked: false },
-            { id: '2', text: 'Add a morning routine', checked: false },
-            { id: '3', text: 'Write your first record', checked: false },
-            { id: '4', text: 'Customize your theme in Settings', checked: false },
-          ],
+          type: 'text',
+          title: '💡 Ideas Board',
+          content: 'Use this space to capture your ideas before they slip away!\n\n• App idea: ...\n• Book to read: ...\n• Project concept: ...',
+          checklistItems: [],
           imageRefs: [],
-          color: '#e8f5e9',
-          labels: ['welcome'],
+          color: 'default',
+          labels: ['Ideas'],
           pinned: false,
           archived: false,
           trashed: false,
           reminderAt: null,
           createdAt: Date.now() - 1000,
           updatedAt: Date.now() - 1000,
+        },
+        {
+          type: 'text',
+          title: '📋 Work Tasks',
+          content: 'Weekly priorities:\n□ Review project proposal\n□ Team standup at 10am\n□ Send status update\n□ Code review',
+          checklistItems: [],
+          imageRefs: [],
+          color: 'default',
+          labels: ['Work'],
+          pinned: false,
+          archived: false,
+          trashed: false,
+          reminderAt: null,
+          createdAt: Date.now() - 2000,
+          updatedAt: Date.now() - 2000,
         },
       ]);
     }
@@ -119,10 +129,10 @@ export async function seedDatabase(): Promise<void> {
     const labelCount = await db.labels.count();
     if (labelCount === 0) {
       await db.labels.bulkAdd([
-        { name: 'welcome', color: '#f59e0b', createdAt: Date.now() },
-        { name: 'work', color: '#3b82f6', createdAt: Date.now() },
-        { name: 'personal', color: '#10b981', createdAt: Date.now() },
-        { name: 'ideas', color: '#8b5cf6', createdAt: Date.now() },
+        { name: 'Welcome', color: '#6366f1', createdAt: Date.now() },
+        { name: 'Work', color: '#f59e0b', createdAt: Date.now() },
+        { name: 'Personal', color: '#10b981', createdAt: Date.now() },
+        { name: 'Ideas', color: '#8b5cf6', createdAt: Date.now() },
       ]);
     }
   } catch {

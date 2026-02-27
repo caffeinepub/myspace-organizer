@@ -1,21 +1,23 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-27T23:16:54.695Z",
-  "summary": "The diff implements most requirements: Google Fonts are added to index.html, Tailwind fontFamily is extended, SettingsPage has a Font Family dropdown, QuotePage extends its font options, and appStore/storage.ts are noted in file summaries as updated. However, the diff does not directly show the contents of storage.ts or appStore.ts — only file summaries reference them. The index.html has preconnect tags present for the first Google Fonts link. One notable issue: appStore.ts and storage.ts changes are only described in file summaries, not shown directly in diff content.",
+  "generatedAt": "2026-02-27T23:38:49.779Z",
+  "summary": "The diff implements most of the required label management features: useLabels hook with createLabel/updateLabel/deleteLabel, LabelManager modal UI, and backend label persistence. However, several key requirements have gaps or issues worth flagging.",
   "missing_requirements": [
     {
-      "id": "REQ-3",
-      "requirement": "In frontend/src/utils/storage.ts, ensure the existing typed localStorage getter/setter for fontFamily supports all 12 new font values.",
-      "reason": "The diff does not include direct content changes to frontend/src/utils/storage.ts. Only the file summary mentions a default theme change to 'light', with no explicit evidence of fontFamily type union being updated to include all 12 fonts.",
+      "id": "REQ-1",
+      "requirement": "On first run (empty labels table), the five default labels — All, Welcome, Work, Personal, Ideas — are seeded using the existing IndexedDB labels table (OrganizerDB).",
+      "reason": "The seedData.ts was modified but only seeds notes/records/streaks/quotes/routines — there is no seeding of the IndexedDB labels table with the five default labels. The backend main.mo has initializeDefaultLabels() but this is a Motoko/ICP backend, not the IndexedDB labels table. The useLabels hook does not perform any seeding on first run (no empty-table check present).",
       "evidence": [
-        "frontend-file-summaries.txt"
+        "frontend/src/utils/seedData.ts",
+        "frontend/src/hooks/useLabels.ts",
+        "backend/main.mo"
       ]
     },
     {
       "id": "REQ-4",
-      "requirement": "In frontend/src/store/appStore.ts, extend the font options list/enum to include all 12 new fonts and apply them to the DOM consistently.",
-      "reason": "The diff does not include direct content changes to frontend/src/store/appStore.ts. The file summary only mentions accent color additions, with no explicit evidence of font options list being extended to all 12 fonts.",
+      "requirement": "The label filter bar in NotesPage reads labels dynamically from the persisted labels list so newly added, renamed, or deleted labels are immediately reflected without a page reload.",
+      "reason": "The diff does not show any changes to NotesPage.tsx or the label filter bar wiring. Without evidence of NotesPage consuming useLabels for its filter bar, this requirement cannot be confirmed as implemented.",
       "evidence": [
         "frontend-file-summaries.txt"
       ]
@@ -23,28 +25,23 @@
   ],
   "hallucinated_features": [
     {
-      "description": "A FONT_FAMILY_MAP object with full CSS font stacks is defined locally in both SettingsPage.tsx and QuotePage.tsx.",
-      "reason": "The build request only asks to add font options to selectors and update tailwind/store/storage. Local FONT_FAMILY_MAP constants in page components were not specified.",
+      "description": "A useQueries.ts file with React Query hooks (useGetAllLabels, useInitializeDefaultLabels) that call a Motoko/ICP backend actor for label persistence.",
+      "reason": "The build request explicitly states to use the existing IndexedDB labels table and not introduce any new storage systems. The Motoko backend (main.mo) and React Query hooks calling it represent a new storage pathway for labels beyond the existing IndexedDB labels table, which was not requested and potentially violates the stated constraint.",
       "evidence": [
-        "frontend/src/pages/SettingsPage.tsx",
-        "frontend/src/pages/QuotePage.tsx"
-      ]
-    },
-    {
-      "description": "Cinzel (non-Decorative) is loaded as a separate Google Font in index.html.",
-      "reason": "REQ-1 only specifies loading Cinzel Decorative as the fallback for Castellar. Loading plain Cinzel as a separate font was not explicitly requested.",
-      "evidence": [
-        "frontend/index.html"
+        "frontend/src/hooks/useQueries.ts",
+        "backend/main.mo"
       ]
     }
   ],
-  "confidence": 0.62,
+  "confidence": 0.72,
   "changed_files": [
+    "backend/main.mo",
     "frontend-file-summaries.txt",
-    "frontend/index.html",
-    "frontend/src/pages/QuotePage.tsx",
-    "frontend/src/pages/SettingsPage.tsx",
-    "frontend/tailwind.config.js",
+    "frontend/src/components/notes/LabelManager.tsx",
+    "frontend/src/hooks/useLabels.ts",
+    "frontend/src/hooks/useNotes.ts",
+    "frontend/src/hooks/useQueries.ts",
+    "frontend/src/utils/seedData.ts",
     "project_state.json"
   ]
 }

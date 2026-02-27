@@ -16,7 +16,6 @@ export function useNotes() {
   const load = useCallback(async () => {
     try {
       const all = await db.notes.toArray();
-      // Sort by updatedAt descending
       all.sort((a, b) => b.updatedAt - a.updatedAt);
       setNotes(all);
     } catch {
@@ -46,7 +45,6 @@ export function useNotes() {
     if (labelFilter) {
       result = result.filter(n => n.labels.includes(labelFilter));
     }
-    // Pinned first
     return [...result.filter(n => n.pinned), ...result.filter(n => !n.pinned)];
   }, [notes, view, search, labelFilter]);
 
@@ -168,6 +166,24 @@ export function useNotes() {
 
   const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
+  /**
+   * Removes a label name from all notes that have it.
+   * Called when a label is deleted so no note is left with a dangling label reference.
+   */
+  const bulkReassignLabel = useCallback(async (labelName: string) => {
+    try {
+      const allNotes = await db.notes.toArray();
+      const affected = allNotes.filter(n => n.labels.includes(labelName));
+      for (const n of affected) {
+        const updated = { ...n, labels: n.labels.filter(l => l !== labelName), updatedAt: Date.now() };
+        await db.notes.put(updated);
+      }
+      await load();
+    } catch {
+      showErrorToast('Failed to reassign notes');
+    }
+  }, [load]);
+
   return {
     notes: filtered,
     allNotes: notes,
@@ -177,6 +193,7 @@ export function useNotes() {
     view, setView,
     selectedIds, toggleSelect, clearSelection,
     createNote, updateNote, deleteNote, trashNote, restoreNote, archiveNote, togglePin, bulkAction,
+    bulkReassignLabel,
     reload: load,
   };
 }

@@ -1,141 +1,107 @@
 {
   "kind": "build_request",
-  "title": "Add Font Family selector with 12 font options (including Castellar) to settings",
+  "title": "Make note labels/tags configurable (add, rename, delete with persistence)",
   "projectName": "MyOrganizer Pro",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In `frontend/index.html`, add efficient Google Fonts `<link>` preconnect and stylesheet tags to load the following fonts: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, and Cinzel Decorative (as the fallback for Castellar). Use `font-display=swap` and load only the necessary weights to avoid performance regressions. Do not remove any existing font imports.",
-      "target": "frontend",
+      "text": "Extend the backend (or existing storage layer) to persist user-defined labels. On first run, initialize with the default set: All, Welcome, Work, Personal, Ideas. The 'All' label must always exist and cannot be renamed or deleted.",
+      "target": "backend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Load fonts efficiently (avoid slowing the app).",
-          "If the platform supports external fonts, load Cinzel Decorative (Google Font) as the closest fallback."
+          "Save the user's custom labels/tags using the same storage method the app already uses for settings/data",
+          "On first run, initialize labels as: All, Welcome, Work, Personal, Ideas (same as current)"
         ]
       },
       "acceptanceCriteria": [
-        "All 11 Google Fonts (Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, Cinzel Decorative) are linked in index.html with preconnect hints and font-display=swap.",
-        "Existing font imports in index.html are preserved unchanged.",
-        "Page load performance is not meaningfully degraded (fonts load asynchronously)."
+        "Labels are persisted using the existing IndexedDB labels table (OrganizerDB)",
+        "On first run (empty labels table), the five default labels — All, Welcome, Work, Personal, Ideas — are seeded",
+        "The 'All' label always exists after initialization and cannot be modified or removed"
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In `frontend/tailwind.config.js`, extend the `fontFamily` configuration to include all new font families: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, and Castellar (with stack: `'Castellar', 'Cinzel Decorative', 'Cinzel', serif`). Do not remove or rename any existing font family entries.",
+      "text": "Update the useLabels hook to expose createLabel, updateLabel (except for 'All'), and deleteLabel (except for 'All') operations. When a label is deleted, all notes that reference that label must be safely reassigned to 'All' (or have the label reference removed) without breaking any existing note data.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Implement it as: \"Castellar\", \"Cinzel Decorative\", \"Cinzel\", serif"
+          "Allow user to add new labels/tags.",
+          "Allow user to rename existing labels/tags (except 'All').",
+          "Allow user to delete labels/tags (except 'All').",
+          "If a label is deleted, notes using that label should be reassigned to 'All'"
         ]
       },
       "acceptanceCriteria": [
-        "All 12 font families are defined in tailwind.config.js fontFamily section.",
-        "Castellar entry uses the fallback stack: 'Castellar', 'Cinzel Decorative', 'Cinzel', serif.",
-        "No existing font family entries are removed or altered."
+        "createLabel adds a new label to IndexedDB and updates the UI label list",
+        "updateLabel renames an existing label in IndexedDB; calling it on 'All' is a no-op or blocked",
+        "deleteLabel removes a label from IndexedDB; calling it on 'All' is a no-op or blocked",
+        "After deleteLabel, all notes previously assigned that label are updated so their label field is set to 'All' (or equivalent safe default)",
+        "No note data is lost or corrupted when a label is deleted"
       ]
     },
     {
       "id": "REQ-3",
-      "text": "In `frontend/src/utils/storage.ts`, ensure the existing typed localStorage getter/setter for `fontFamily` supports all 12 new font values (Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, Castellar) in addition to any existing values. Do not change the storage key or mechanism.",
+      "text": "Expose label management UI through the existing LabelManager modal component (frontend/src/components/notes/LabelManager.tsx) so users can add new labels, rename existing labels (except 'All'), and delete existing labels (except 'All'). Do not change the Notes page layout, label filter bar appearance, or any other UI outside of what is strictly required for this management interface.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Persist the chosen font using the same storage method already used by app settings."
+          "Do not change the Notes UI layout. Only make these label/tag options configurable by the user.",
+          "Allow user to add new labels/tags.",
+          "Allow user to rename existing labels/tags (except 'All').",
+          "Allow user to delete labels/tags (except 'All')."
         ]
       },
       "acceptanceCriteria": [
-        "The fontFamily localStorage utility accepts and returns all 12 new font name strings.",
-        "Existing font values and the storage key are unchanged.",
-        "No other storage utilities are modified."
+        "The LabelManager modal allows adding a new label by entering a name and confirming",
+        "The LabelManager modal allows renaming any label except 'All' inline",
+        "The LabelManager modal allows deleting any label except 'All', with a confirmation step",
+        "'All' label has no rename or delete controls visible",
+        "No changes are made to the Notes page layout, label filter bar, note cards, or any other UI outside the LabelManager modal"
       ]
     },
     {
       "id": "REQ-4",
-      "text": "In `frontend/src/store/appStore.ts`, extend the font options list/enum used by the global appearance store to include all 12 new fonts (Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, Castellar). When a font is selected, apply it to the DOM (e.g., via a CSS variable or class on `<html>`/`<body>`) consistently with how the existing font application works. Do not change the default font value or any other store behavior.",
+      "text": "Ensure the label filter bar in NotesPage continues to read labels dynamically from the persisted labels list (via useLabels or equivalent), so newly added, renamed, or deleted labels are immediately reflected in the filter options without any page reload.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-4"
+          "msg-1"
         ],
         "quotes": [
-          "Apply the selected font consistently across the whole app (or only to the configurable section if the app currently limits font styling—follow existing behavior).",
-          "Keep the current default font exactly the same (do not change how the app looks unless the user selects a new font)."
+          "Filtering by a label/tag must continue to work exactly as it does now."
         ]
       },
       "acceptanceCriteria": [
-        "All 12 new fonts are listed as valid options in the appStore font configuration.",
-        "Selecting a font applies it to the app using the same DOM mechanism as existing fonts.",
-        "The default font is unchanged; app appearance is identical to before unless a new font is explicitly selected.",
-        "No existing font options or store logic is removed."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "In `frontend/src/pages/SettingsPage.tsx`, add a 'Font Family' dropdown/selector in the existing font settings section. The selector must list all existing font options plus the 12 new ones: Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, and Castellar. Selecting a font updates the appStore and persists via the existing localStorage mechanism. Do not change the layout, styling, labels, or any other UI elements on the page. Do not remove existing font options.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "In the existing customization/settings area where text styling is configured (e.g., quote text style or theme settings), add a \"Font Family\" selector/dropdown.",
-          "Do not remove any existing font options (if any). Only ADD more."
-        ]
-      },
-      "acceptanceCriteria": [
-        "A 'Font Family' dropdown is present in the settings page font section.",
-        "The dropdown lists all 12 new fonts plus any previously existing font options.",
-        "Selecting a font immediately applies it to the app and persists the choice in localStorage.",
-        "The default font is pre-selected on first load (no visual change from before).",
-        "No other UI elements on SettingsPage are altered (no layout, styling, or label changes)."
-      ]
-    },
-    {
-      "id": "REQ-6",
-      "text": "In `frontend/src/pages/QuotePage.tsx`, if the quote widget's font selector already exists, extend it with the same 12 new font options (Inter, Poppins, Montserrat, Roboto, Open Sans, Lato, Nunito, Playfair Display, Merriweather, Source Sans 3, JetBrains Mono, Castellar) without removing existing options or changing any other part of the UI. If the font selector on this page is separate from the global settings font, add the options there as well, consistent with existing behavior.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-4"
-        ],
-        "quotes": [
-          "In the existing customization/settings area where text styling is configured (e.g., quote text style or theme settings), add a \"Font Family\" selector/dropdown.",
-          "Do not remove any existing font options (if any). Only ADD more."
-        ]
-      },
-      "acceptanceCriteria": [
-        "QuotePage font selector includes all 12 new font options in addition to any existing ones.",
-        "No existing font options on QuotePage are removed.",
-        "No other UI elements on QuotePage are changed."
+        "After adding a new label, it appears in the filter bar on the Notes page",
+        "After renaming a label, the updated name appears in the filter bar",
+        "After deleting a label, it is removed from the filter bar",
+        "Selecting any label in the filter bar correctly filters notes to those assigned that label, same as current behavior",
+        "'All' always appears as the first filter option"
       ]
     }
   ],
   "constraints": [
-    "Do NOT change any existing UI layout, visual styling, component structure, or feature behavior.",
-    "Do NOT rename any existing settings, labels, or options.",
-    "Do NOT change the default font — the app must look identical to before unless the user actively selects a new font.",
-    "Do NOT remove any existing font options anywhere in the app.",
-    "Castellar must use the fallback font stack: 'Castellar', 'Cinzel Decorative', 'Cinzel', serif.",
-    "Font loading must use Google Fonts with font-display=swap for performance.",
-    "Font persistence must use the same localStorage mechanism already in place."
+    "Do not change the Notes page UI layout, label filter bar appearance, styling, or any other existing UI or feature outside of label management",
+    "Do not introduce any new storage systems; use the existing IndexedDB labels table already present in OrganizerDB",
+    "The 'All' label must always exist, must be the first option, and must never be renameable or deletable",
+    "Do not rename, restyle, or restructure any existing components, pages, or hooks beyond what is strictly required for this feature",
+    "Immutable frontend paths must not be modified"
   ],
   "nonGoals": [
-    "Changing any existing app UI, layout, colors, or component styling.",
-    "Adding any new features beyond the Font Family selector.",
-    "Changing the backend in any way.",
-    "Replacing or removing existing font options.",
-    "Changing the default selected font.",
-    "Using any font loading mechanism other than Google Fonts for web fonts."
+    "Changing the visual design, colors, or layout of the Notes page or any other page",
+    "Adding label colors or icons (unless already present in LabelManager)",
+    "Any changes to note creation, editing, archiving, trashing, or other note features",
+    "Any changes outside the Notes section and its label management"
   ],
   "imageRequirements": {
     "required": [],

@@ -9,13 +9,33 @@
 import { IDL } from '@icp-sdk/core/candid';
 
 export const idlService = IDL.Service({
-  'ping' : IDL.Func([], [IDL.Text], ['query']),
+  'addLabel' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+  'deleteLabel' : IDL.Func([IDL.Text], [IDL.Bool], []),
+  'getAllLabels' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))],
+      ['query'],
+    ),
+  'getLabel' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], ['query']),
+  'initializeDefaultLabels' : IDL.Func([], [], []),
+  'renameLabel' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
-  return IDL.Service({ 'ping' : IDL.Func([], [IDL.Text], ['query']) });
+  return IDL.Service({
+    'addLabel' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+    'deleteLabel' : IDL.Func([IDL.Text], [IDL.Bool], []),
+    'getAllLabels' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))],
+        ['query'],
+      ),
+    'getLabel' : IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], ['query']),
+    'initializeDefaultLabels' : IDL.Func([], [], []),
+    'renameLabel' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+  });
 };
 
 export const init = ({ IDL }) => { return []; };
