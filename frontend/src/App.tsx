@@ -12,7 +12,7 @@ import { seedDatabase } from './utils/seedData';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
 
 const NotesPage = lazy(() => import('./pages/NotesPage').then(m => ({ default: m.NotesPage })));
-const RecordsPage = lazy(() => import('./pages/RecordsPage').then(m => ({ default: m.RecordsPage })));
+const RecordsPage = lazy(() => import('./pages/RecordsPage'));
 
 type TabId = 'home' | 'routines' | 'notes' | 'records' | 'settings' | 'streak' | 'quote';
 

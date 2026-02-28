@@ -1,15 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Add TXT, WORD (DOC), and JSON export format options to the Routines export area, and add a Mic (speech-to-text) button inside the Routine Add/Edit form using the browser Web Speech API.
+**Goal:** Add three new features exclusively to the Records section: multiple export formats (TXT, DOC, JSON), microphone/speech-to-text input in the Add/Edit modal, and image attachment support in the Add/Edit modal.
 
 **Planned changes:**
-- Add TXT, WORD (DOC as Word-compatible HTML), and JSON export format options in the existing Routines export area without removing or changing existing export behavior
-- Implement/update `frontend/src/utils/routineExport.ts` with client-side export logic for all three formats, including profile, AM/PM time, title, and any other stored fields per routine item
-- Name exported files as `routines_YYYY-MM-DD_HHMM.(txt|doc|json)` using the current local date/time
-- Add a Mic button inside the Routine Add/Edit form next to the title or notes input, using the browser Web Speech API for speech-to-text
-- Show live interim transcription while recognition is active; append final transcript to the active input field on stop
-- Use or minimally extend the existing `useSpeechRecognition` hook
-- If the browser does not support SpeechRecognition, hide the Mic button and show the inline message "Speech-to-text not supported on this browser." in the Routine Add/Edit form
+- Create a `recordExport` utility that exports records as TXT, DOC (Word-compatible HTML), and JSON files with filenames following the pattern `records_YYYY-MM-DD_HHMM.(txt/doc/json)`, using the existing `dateFormatter` utility for date/time formatting; all exports are client-side only
+- Add TXT and DOC export buttons to the existing Records Import/Export area in `RecordsPage.tsx`, alongside the existing JSON export, without changing any other UI layout or styling
+- Add a mic button inside the Record Add/Edit modal that uses the existing `useSpeechRecognition` hook to start/stop speech recognition, show live/interim transcription, and append final text to the active input field; show an inline fallback message on unsupported browsers
+- Add an optional `imageId` field to the Record TypeScript interface/schema to support linking a stored image to a record
+- Add an "Add Image" button inside the Record Add/Edit modal that opens a file picker, compresses the selected image client-side using the existing `imageCompression` utility (max 1600px, ~0.7 quality), stores it in IndexedDB via the existing `useImageStorage` hook, and displays a thumbnail in the record view; allow removing or replacing the image while editing
 
-**User-visible outcome:** Users can export their routines in TXT, WORD, or JSON formats directly from the Routines page, and can dictate text into the routine title or notes field using their microphone when adding or editing a routine.
+**User-visible outcome:** Users can export their records in TXT, DOC, or JSON format directly from the Records page, dictate text into a record using their microphone, and attach a compressed image to any record that displays as a thumbnail — all working offline with no server requests.

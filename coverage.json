@@ -1,58 +1,66 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T00:40:58.147Z",
+  "generatedAt": "2026-02-28T01:03:01.291Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
+    "total": 5,
     "implemented": 4,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In the Routines Import/Export area (wherever routine export currently exists in RoutinesPage.tsx or related components), add three export format options — TXT, WORD (DOC as Word-compatible HTML), and JSON — using the smallest possible UI addition (e.g., a format selector or additional buttons) that matches the existing design style. Do not remove or change any existing export behavior; only add these new format options alongside what already exists.",
+        "summary": "Create a recordExport utility (frontend/src/utils/recordExport.ts) that exports records as TXT, DOC (Word-compatible HTML), and JSON files. Each record must include its title/main text, body/details, date+time formatted using the existing dateFormatter utility (AM/PM, matching current app format), and any existing fields/tags. File naming must follow the pattern records_YYYY-MM-DD_HHMM.(txt/doc/json). Export must be entirely client-side and work offline — no backend calls. Do not remove or alter any existing export behavior in useRecords.ts or RecordsPage.tsx.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/RoutinesPage.tsx"
+          "frontend/src/utils/recordExport.ts"
         ],
         "matchedFiles": [
-          "frontend/src/pages/RoutinesPage.tsx"
+          "frontend/src/utils/recordExport.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Each routine export (TXT, WORD/DOC, JSON) must include for every routine item: the Profile (Weekdays / Weekends / Auto as applicable), the time formatted in AM/PM, the title, and any other fields the app already stores per item (description, tag, duration, etc.). The exported file must be named routines_YYYY-MM-DD_HHMM.(txt|doc|json) using the current local date and time. Export must be entirely client-side and work offline, using only browser APIs (no server calls). Implement or update frontend/src/utils/routineExport.ts accordingly.",
+        "summary": "In RecordsPage.tsx, add TXT and WORD (DOC) export format options to the existing Records Import/Export area, alongside the existing JSON export. The new format buttons must be minimal UI additions that visually match the current design — do not change any layout, styling, or other UI elements. All three formats should be available (TXT, DOC, JSON).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/routineExport.ts"
+          "frontend/src/pages/RecordsPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/utils/routineExport.ts"
+          "frontend/src/pages/RecordsPage.tsx"
         ]
       },
       {
         "id": "REQ-3",
-        "summary": "Inside the Routine Add/Edit modal or form (in RoutinesPage.tsx or the relevant add/edit component), add a small Mic button next to the routine title or notes input field. When clicked, it uses the browser Web Speech API (SpeechRecognition / webkitSpeechRecognition) to start speech recognition, shows live interim transcription, and appends/inserts the final transcribed text into the active input field (title or notes). A second click (or a Stop button) ends recognition. Do not store audio — only the resulting text string. This addition must not interfere with manual typing or the save/submit flow. Use the existing useSpeechRecognition hook (frontend/src/hooks/useSpeechRecognition.ts) if it is compatible, or extend it minimally.",
+        "summary": "Add a microphone/speech-to-text button exclusively inside the Record Add/Edit modal/flow in the Records section. Use the browser Web Speech API (SpeechRecognition / webkitSpeechRecognition) via the existing useSpeechRecognition hook (frontend/src/hooks/useSpeechRecognition.ts). The button must support start/stop, display live/interim transcription, and append or insert transcribed text into the active record input field. Do not store audio — only the resulting text. If speech recognition is not supported by the browser, display a small inline message: 'Speech-to-text not supported on this browser.' Manual typing and saving must remain fully functional. Do not modify any other part of the Records UI or any other section of the app.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/RoutinesPage.tsx",
-          "frontend/src/hooks/useSpeechRecognition.ts"
+          "frontend/src/pages/RecordsPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/RoutinesPage.tsx"
+          "frontend/src/pages/RecordsPage.tsx"
         ]
       },
       {
         "id": "REQ-4",
-        "summary": "If the browser does not support SpeechRecognition or webkitSpeechRecognition, display a small inline message reading 'Speech-to-text not supported on this browser.' in place of or next to the Mic button inside the Routine Add/Edit form. No Mic button should appear in this case.",
+        "summary": "Update the Record data schema (frontend/src/db/schema.ts) to add an optional imageId (or imageData) field to the Record interface to support storing a reference to a compressed image. Also update the backend main.mo actor if the record structure is persisted there; otherwise this is frontend-only since records are stored in IndexedDB.",
+        "status": "missing",
+        "plannedFiles": [
+          "frontend/src/db/schema.ts"
+        ],
+        "matchedFiles": []
+      },
+      {
+        "id": "REQ-5",
+        "summary": "Add an 'Add Image' button exclusively inside the Record Add/Edit modal/flow. When clicked, it opens a device file picker for image selection. After selection, compress the image client-side using the existing imageCompression utility (frontend/src/utils/imageCompression.ts) to a maximum width of 1600px at JPEG/WebP quality ~0.7. Store the compressed image in IndexedDB using the existing useImageStorage hook (frontend/src/hooks/useImageStorage.ts), linking it to the record via the new imageId field. Display the attached image as a thumbnail in the record view. While editing, allow removing or replacing the image. Do not change any other record layout beyond showing the image thumbnail in the appropriate place. Do not modify any other section of the app.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/pages/RoutinesPage.tsx"
+          "frontend/src/pages/RecordsPage.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/pages/RoutinesPage.tsx"
+          "frontend/src/pages/RecordsPage.tsx"
         ]
       }
     ]
@@ -62,8 +70,9 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/pages/RoutinesPage.tsx",
-    "frontend/src/utils/routineExport.ts",
+    "frontend/src/App.tsx",
+    "frontend/src/pages/RecordsPage.tsx",
+    "frontend/src/utils/recordExport.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

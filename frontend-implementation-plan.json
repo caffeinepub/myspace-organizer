@@ -1,79 +1,99 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add Routines Export Formats (TXT/WORD/JSON) and Mic Speech-to-Text in Routine Add/Edit",
+  "title": "Add Records export formats, mic input, and image attachment to Records section",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add TXT, WORD (DOC), and JSON export format options to the existing Routines export area in RoutinesPage.tsx, preserving all existing export behavior",
+      "summary": "Create a recordExport utility supporting TXT, DOC (Word-compatible HTML), and JSON export formats with client-side-only offline functionality",
       "acceptanceCriteria": [
-        "TXT, WORD (DOC), and JSON export options are visible in the existing Routines export area.",
-        "Existing export behavior is unchanged; new formats are additive only.",
-        "The UI addition is minimal and matches the current design style."
+        "Exporting records as TXT produces a plain-text file with all records' title, body, date+time (AM/PM), and existing tags/fields.",
+        "Exporting records as WORD produces a .doc file (Word-compatible HTML) with all records formatted with title, body, date+time, and fields.",
+        "Exporting records as JSON produces a valid .json file containing all record data.",
+        "File name matches pattern records_YYYY-MM-DD_HHMM with correct extension.",
+        "All exports trigger a browser download with no server request.",
+        "Existing JSON export behavior in useRecords/RecordsPage is not broken or removed."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/RoutinesPage.tsx",
-          "operation": "modify",
-          "description": "Add three new export format options (TXT, WORD/DOC, JSON) to the existing Routines export UI area. Use a minimal UI addition such as a format selector dropdown or additional buttons that match the existing design style. Wire the new export options to call the corresponding export functions from frontend/src/utils/routineExport.ts. Do not remove or alter any existing export functionality."
+          "path": "frontend/src/utils/recordExport.ts",
+          "operation": "create",
+          "description": "Create a new recordExport utility module that exports records to TXT, DOC (Word-compatible HTML), and JSON formats. Implement exportRecordsAsTxt, exportRecordsAsDoc, and exportRecordsAsJson functions. Use the existing dateFormatter utility from frontend/src/utils/dateFormatter.ts to format date+time in AM/PM format. Include all record fields (title/main text, body/details, date+time, tags/fields). Generate filenames following the pattern records_YYYY-MM-DD_HHMM.(txt/doc/json). Trigger browser downloads using Blob and URL.createObjectURL. All operations must be client-side only with no backend calls."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Implement client-side export logic for routines in TXT, WORD (DOC as Word-compatible HTML), and JSON formats with complete profile and item data, using timestamped filenames",
+      "summary": "Add TXT and WORD (DOC) export format options to the Records Import/Export area alongside existing JSON export",
       "acceptanceCriteria": [
-        "Exported TXT file contains profile, AM/PM time, title, and any other stored fields for each item.",
-        "Exported DOC file (Word-compatible HTML) contains the same fields and opens in Word.",
-        "Exported JSON file contains the same fields in structured JSON.",
-        "Downloaded file is named routines_YYYY-MM-DD_HHMM with the appropriate extension.",
-        "Export works fully offline without any network requests."
+        "The Records page shows TXT, WORD/DOC, and JSON export options in the existing export area.",
+        "Clicking each option downloads the corresponding file format.",
+        "No other UI layout, styling, or feature in RecordsPage is changed.",
+        "Existing export behavior is preserved."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/routineExport.ts",
+          "path": "frontend/src/pages/RecordsPage.tsx",
           "operation": "modify",
-          "description": "Extend or update the existing export functions to support TXT, WORD (DOC as Word-compatible HTML), and JSON formats. Each export must include for every routine item: Profile (Weekdays/Weekends/Auto), time in AM/PM format, title, and all other stored fields (description, tag, duration, etc.). Generate filenames using the pattern routines_YYYY-MM-DD_HHMM.(txt|doc|json) with the current local date and time. Ensure all export logic is entirely client-side using only browser APIs (no server calls) and works offline."
+          "description": "Add TXT and DOC export buttons to the existing Records Import/Export area alongside the current JSON export button. Import the new exportRecordsAsTxt and exportRecordsAsDoc functions from frontend/src/utils/recordExport.ts. Wire the new buttons to call these export functions with the current records array. Ensure buttons visually match the existing design and layout. Do not modify any other UI elements, styling, or existing export behavior."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Add a Mic button for speech-to-text using the Web Speech API inside the Routine Add/Edit form, showing live transcription and inserting the final text into the active input field",
+      "summary": "Add microphone/speech-to-text button inside Record Add/Edit modal using the existing useSpeechRecognition hook",
       "acceptanceCriteria": [
-        "A Mic button appears only inside the Routine Add/Edit form, next to the title or notes input.",
-        "Clicking the Mic button starts speech recognition; live interim results are shown.",
-        "Clicking Stop (or the Mic button again) ends recognition and appends the final transcript to the input field.",
-        "Manual typing continues to work normally before, during, and after recognition.",
-        "The save/submit flow is unaffected.",
-        "No audio data is stored; only the text transcript is inserted into the field."
+        "A mic button appears only in the Record Add/Edit modal/flow.",
+        "Clicking the mic button starts speech recognition; clicking again stops it.",
+        "Live/interim transcription text is shown while listening.",
+        "Final transcribed text is appended/inserted into the active record input field.",
+        "No audio data is stored; only the final transcribed text is used.",
+        "On unsupported browsers, an inline message 'Speech-to-text not supported on this browser.' is shown instead of the button.",
+        "Manual typing and saving a record works as before.",
+        "No other part of the app UI is changed."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/RoutinesPage.tsx",
+          "path": "frontend/src/pages/RecordsPage.tsx",
           "operation": "modify",
-          "description": "Add a small Mic button next to the routine title or notes input field inside the Routine Add/Edit modal or form. When clicked, use the existing useSpeechRecognition hook (frontend/src/hooks/useSpeechRecognition.ts) to start speech recognition, display live interim transcription inline, and append/insert the final transcribed text into the active input field. A second click (or a Stop button) ends recognition. Ensure this addition does not interfere with manual typing or the save/submit flow. Do not store audio; only insert the resulting text string into the input field. Verify the useSpeechRecognition hook's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useSpeechRecognition.ts",
-          "operation": "modify",
-          "description": "Review and extend the existing useSpeechRecognition hook if necessary to ensure it supports start/stop controls, exposes live interim transcription state, and provides the final transcript result. Ensure the hook uses the browser Web Speech API (SpeechRecognition or webkitSpeechRecognition) and handles errors gracefully."
+          "description": "Add a microphone/speech-to-text button inside the Record Add/Edit modal. Use the existing useSpeechRecognition hook from frontend/src/hooks/useSpeechRecognition.ts to access speech recognition functionality. Implement start/stop toggle on button click. Display live/interim transcription while listening. Append or insert final transcribed text into the active record input field (title or body). Show 'Speech-to-text not supported on this browser.' inline message if SpeechRecognition API is unavailable. Do not store audio data—only use the resulting text. Ensure manual typing and saving remain fully functional. Do not modify any other UI elements outside the modal."
         }
       ]
     },
     {
       "id": "REQ-4",
-      "summary": "Display a fallback message 'Speech-to-text not supported on this browser.' inside the Routine Add/Edit form when SpeechRecognition is unavailable, hiding the Mic button",
+      "summary": "Update Record data schema to add optional imageId field for storing compressed image references",
       "acceptanceCriteria": [
-        "On browsers without SpeechRecognition support, the Mic button is not rendered.",
-        "Instead, the message 'Speech-to-text not supported on this browser.' is shown inline in the Routine Add/Edit form.",
-        "The rest of the form functions normally on unsupported browsers."
+        "The Record TypeScript interface has an optional field for image reference (imageId or imageData).",
+        "Existing records without an image are unaffected.",
+        "No backend changes are required if records are stored only in IndexedDB."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/pages/RoutinesPage.tsx",
+          "path": "frontend/src/db/schema.ts",
           "operation": "modify",
-          "description": "Add a browser capability check for SpeechRecognition (window.SpeechRecognition or window.webkitSpeechRecognition) inside the Routine Add/Edit form. If the API is not supported, hide the Mic button and display a small inline message reading 'Speech-to-text not supported on this browser.' in its place. Ensure the rest of the form functions normally on unsupported browsers."
+          "description": "Add an optional imageId field (type: string | undefined) to the Record interface to support storing a reference to a compressed image stored in IndexedDB. Ensure existing records without an image remain unaffected by making the field optional."
+        }
+      ]
+    },
+    {
+      "id": "REQ-5",
+      "summary": "Add 'Add Image' button inside Record Add/Edit modal with client-side compression, IndexedDB storage, thumbnail display, and remove/replace capability",
+      "acceptanceCriteria": [
+        "An 'Add Image' button appears only in the Record Add/Edit modal/flow.",
+        "Selecting an image compresses it client-side to max 1600px width and ~0.7 JPEG/WebP quality before storing.",
+        "Compressed image is stored in IndexedDB and linked to the record.",
+        "A thumbnail of the image is shown in the record view when an image is attached.",
+        "While editing, the user can remove or replace the attached image.",
+        "Records without an image are displayed exactly as before.",
+        "No other record list layout or other sections of the app are changed.",
+        "Everything works offline with no server requests for image storage."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/RecordsPage.tsx",
+          "operation": "modify",
+          "description": "Add an 'Add Image' button inside the Record Add/Edit modal. When clicked, open a device file picker for image selection. After selection, compress the image client-side using the existing imageCompression utility from frontend/src/utils/imageCompression.ts with max width 1600px and JPEG/WebP quality ~0.7. Store the compressed image in IndexedDB using the existing useImageStorage hook from frontend/src/hooks/useImageStorage.ts and link it to the record via the new imageId field. Display the attached image as a thumbnail in the record view (both in the modal and in the record list card). While editing, allow the user to remove or replace the attached image. Ensure records without an image display exactly as before. Do not modify any other record list layout or other sections. Everything must work offline with no server requests."
         }
       ]
     }

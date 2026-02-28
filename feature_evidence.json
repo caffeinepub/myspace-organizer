@@ -2,10 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-the-routines-import-export-area-wherever-routine-export-currently-exists-in-routinespage-tsx-or-related-components-add-three-export-format-options-txt-word-doc-as-word-compatible-html-and-json-using-the-smallest-possible-ui-addition-e-g-a-format-selector-or-additional-buttons-that-matches-the-existing-design-style-do-not-remove-or-change-any-existing-export-behavior-only-add-these-new-format-options-alongside-what-already-exists",
-      "featureTitle": "In the Routines Import/Export area (wherever routine export currently exists in RoutinesPage.tsx or related components), add three export format options — TXT, WORD (DOC as Word-compatible HTML), and JSON — using the smallest possible UI addition (e.g., a format selector or additional buttons) that matches the existing design style. Do not remove or change any existing export behavior; only add these new format options alongside what already exists.",
+      "featureId": "feature-create-a-recordexport-utility-frontend-src-utils-recordexport-ts-that-exports-records-as-txt-doc-word-compatible-html-and-json-files-each-record-must-include-its-title-main-text-body-details-date-time-formatted-using-the-existing-dateformatter-utility-am-pm-matching-current-app-format-and-any-existing-fields-tags-file-naming-must-follow-the-pattern-records-yyyy-mm-dd-hhmm-txt-doc-json-export-must-be-entirely-client-side-and-work-offline-no-backend-calls-do-not-remove-or-alter-any-existing-export-behavior-in-userecords-ts-or-recordspage-tsx",
+      "featureTitle": "Create a recordExport utility (frontend/src/utils/recordExport.ts) that exports records as TXT, DOC (Word-compatible HTML), and JSON files. Each record must include its title/main text, body/details, date+time formatted using the existing dateFormatter utility (AM/PM, matching current app format), and any existing fields/tags. File naming must follow the pattern records_YYYY-MM-DD_HHMM.(txt/doc/json). Export must be entirely client-side and work offline — no backend calls. Do not remove or alter any existing export behavior in useRecords.ts or RecordsPage.tsx.",
       "files": [
-        "frontend/src/pages/RoutinesPage.tsx"
+        "frontend/src/utils/recordExport.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -20,10 +20,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-each-routine-export-txt-word-doc-json-must-include-for-every-routine-item-the-profile-weekdays-weekends-auto-as-applicable-the-time-formatted-in-am-pm-the-title-and-any-other-fields-the-app-already-stores-per-item-description-tag-duration-etc-the-exported-file-must-be-named-routines-yyyy-mm-dd-hhmm-txt-doc-json-using-the-current-local-date-and-time-export-must-be-entirely-client-side-and-work-offline-using-only-browser-apis-no-server-calls-implement-or-update-frontend-src-utils-routineexport-ts-accordingly",
-      "featureTitle": "Each routine export (TXT, WORD/DOC, JSON) must include for every routine item: the Profile (Weekdays / Weekends / Auto as applicable), the time formatted in AM/PM, the title, and any other fields the app already stores per item (description, tag, duration, etc.). The exported file must be named routines_YYYY-MM-DD_HHMM.(txt|doc|json) using the current local date and time. Export must be entirely client-side and work offline, using only browser APIs (no server calls). Implement or update frontend/src/utils/routineExport.ts accordingly.",
+      "featureId": "feature-in-recordspage-tsx-add-txt-and-word-doc-export-format-options-to-the-existing-records-import-export-area-alongside-the-existing-json-export-the-new-format-buttons-must-be-minimal-ui-additions-that-visually-match-the-current-design-do-not-change-any-layout-styling-or-other-ui-elements-all-three-formats-should-be-available-txt-doc-json",
+      "featureTitle": "In RecordsPage.tsx, add TXT and WORD (DOC) export format options to the existing Records Import/Export area, alongside the existing JSON export. The new format buttons must be minimal UI additions that visually match the current design — do not change any layout, styling, or other UI elements. All three formats should be available (TXT, DOC, JSON).",
       "files": [
-        "frontend/src/utils/routineExport.ts"
+        "frontend/src/pages/RecordsPage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -38,10 +38,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-inside-the-routine-add-edit-modal-or-form-in-routinespage-tsx-or-the-relevant-add-edit-component-add-a-small-mic-button-next-to-the-routine-title-or-notes-input-field-when-clicked-it-uses-the-browser-web-speech-api-speechrecognition-webkitspeechrecognition-to-start-speech-recognition-shows-live-interim-transcription-and-appends-inserts-the-final-transcribed-text-into-the-active-input-field-title-or-notes-a-second-click-or-a-stop-button-ends-recognition-do-not-store-audio-only-the-resulting-text-string-this-addition-must-not-interfere-with-manual-typing-or-the-save-submit-flow-use-the-existing-usespeechrecognition-hook-frontend-src-hooks-usespeechrecognition-ts-if-it-is-compatible-or-extend-it-minimally",
-      "featureTitle": "Inside the Routine Add/Edit modal or form (in RoutinesPage.tsx or the relevant add/edit component), add a small Mic button next to the routine title or notes input field. When clicked, it uses the browser Web Speech API (SpeechRecognition / webkitSpeechRecognition) to start speech recognition, shows live interim transcription, and appends/inserts the final transcribed text into the active input field (title or notes). A second click (or a Stop button) ends recognition. Do not store audio — only the resulting text string. This addition must not interfere with manual typing or the save/submit flow. Use the existing useSpeechRecognition hook (frontend/src/hooks/useSpeechRecognition.ts) if it is compatible, or extend it minimally.",
+      "featureId": "feature-add-a-microphone-speech-to-text-button-exclusively-inside-the-record-add-edit-modal-flow-in-the-records-section-use-the-browser-web-speech-api-speechrecognition-webkitspeechrecognition-via-the-existing-usespeechrecognition-hook-frontend-src-hooks-usespeechrecognition-ts-the-button-must-support-start-stop-display-live-interim-transcription-and-append-or-insert-transcribed-text-into-the-active-record-input-field-do-not-store-audio-only-the-resulting-text-if-speech-recognition-is-not-supported-by-the-browser-display-a-small-inline-message-speech-to-text-not-supported-on-this-browser-manual-typing-and-saving-must-remain-fully-functional-do-not-modify-any-other-part-of-the-records-ui-or-any-other-section-of-the-app",
+      "featureTitle": "Add a microphone/speech-to-text button exclusively inside the Record Add/Edit modal/flow in the Records section. Use the browser Web Speech API (SpeechRecognition / webkitSpeechRecognition) via the existing useSpeechRecognition hook (frontend/src/hooks/useSpeechRecognition.ts). The button must support start/stop, display live/interim transcription, and append or insert transcribed text into the active record input field. Do not store audio — only the resulting text. If speech recognition is not supported by the browser, display a small inline message: 'Speech-to-text not supported on this browser.' Manual typing and saving must remain fully functional. Do not modify any other part of the Records UI or any other section of the app.",
       "files": [
-        "frontend/src/pages/RoutinesPage.tsx"
+        "frontend/src/pages/RecordsPage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -56,10 +56,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-if-the-browser-does-not-support-speechrecognition-or-webkitspeechrecognition-display-a-small-inline-message-reading-speech-to-text-not-supported-on-this-browser-in-place-of-or-next-to-the-mic-button-inside-the-routine-add-edit-form-no-mic-button-should-appear-in-this-case",
-      "featureTitle": "If the browser does not support SpeechRecognition or webkitSpeechRecognition, display a small inline message reading 'Speech-to-text not supported on this browser.' in place of or next to the Mic button inside the Routine Add/Edit form. No Mic button should appear in this case.",
+      "featureId": "feature-add-an-add-image-button-exclusively-inside-the-record-add-edit-modal-flow-when-clicked-it-opens-a-device-file-picker-for-image-selection-after-selection-compress-the-image-client-side-using-the-existing-imagecompression-utility-frontend-src-utils-imagecompression-ts-to-a-maximum-width-of-1600px-at-jpeg-webp-quality-0-7-store-the-compressed-image-in-indexeddb-using-the-existing-useimagestorage-hook-frontend-src-hooks-useimagestorage-ts-linking-it-to-the-record-via-the-new-imageid-field-display-the-attached-image-as-a-thumbnail-in-the-record-view-while-editing-allow-removing-or-replacing-the-image-do-not-change-any-other-record-layout-beyond-showing-the-image-thumbnail-in-the-appropriate-place-do-not-modify-any-other-section-of-the-app",
+      "featureTitle": "Add an 'Add Image' button exclusively inside the Record Add/Edit modal/flow. When clicked, it opens a device file picker for image selection. After selection, compress the image client-side using the existing imageCompression utility (frontend/src/utils/imageCompression.ts) to a maximum width of 1600px at JPEG/WebP quality ~0.7. Store the compressed image in IndexedDB using the existing useImageStorage hook (frontend/src/hooks/useImageStorage.ts), linking it to the record via the new imageId field. Display the attached image as a thumbnail in the record view. While editing, allow removing or replacing the image. Do not change any other record layout beyond showing the image thumbnail in the appropriate place. Do not modify any other section of the app.",
       "files": [
-        "frontend/src/pages/RoutinesPage.tsx"
+        "frontend/src/pages/RecordsPage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -69,7 +69,7 @@
         "github-export-icp-cli@1.0.0"
       ],
       "testIds": [
-        "REQ-4"
+        "REQ-5"
       ],
       "confidence": "high"
     }
