@@ -1,13 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Add three new features exclusively to the Records section: multiple export formats (TXT, DOC, JSON), microphone/speech-to-text input in the Add/Edit modal, and image attachment support in the Add/Edit modal.
+**Goal:** Enhance the Records section with three new export formats (TXT, DOC, JSON), optional image attachment in the Add Record form, and a speech-to-text mic button in the Add Record form.
 
 **Planned changes:**
-- Create a `recordExport` utility that exports records as TXT, DOC (Word-compatible HTML), and JSON files with filenames following the pattern `records_YYYY-MM-DD_HHMM.(txt/doc/json)`, using the existing `dateFormatter` utility for date/time formatting; all exports are client-side only
-- Add TXT and DOC export buttons to the existing Records Import/Export area in `RecordsPage.tsx`, alongside the existing JSON export, without changing any other UI layout or styling
-- Add a mic button inside the Record Add/Edit modal that uses the existing `useSpeechRecognition` hook to start/stop speech recognition, show live/interim transcription, and append final text to the active input field; show an inline fallback message on unsupported browsers
-- Add an optional `imageId` field to the Record TypeScript interface/schema to support linking a stored image to a record
-- Add an "Add Image" button inside the Record Add/Edit modal that opens a file picker, compresses the selected image client-side using the existing `imageCompression` utility (max 1600px, ~0.7 quality), stores it in IndexedDB via the existing `useImageStorage` hook, and displays a thumbnail in the record view; allow removing or replacing the image while editing
+- Add a new `recordExport.ts` utility with client-side export functions for TXT, DOC (Word-compatible HTML), and JSON formats, following existing export utility patterns
+- Add three export buttons (TXT, DOC, JSON) in the Records section UI alongside any existing export controls, with filenames formatted as `records_YYYY-MM-DD_HHMM.ext` and date/time displayed as "28 Feb 2026, 3:45 AM"
+- Add an "Add Image" button in the Add Record form only, compressing selected images client-side (max 1600px width, JPEG quality 0.7) and storing them under a new separate storage key (`recordImagesById`) keyed by record ID
+- Show a small thumbnail preview of the selected image inside the Add Record form
+- Add a Mic button in the Add Record form only, using the browser Web Speech API to append live transcription into the existing text input field; show an inline message "Speech-to-text not supported on this browser." if the API is unavailable
 
-**User-visible outcome:** Users can export their records in TXT, DOC, or JSON format directly from the Records page, dictate text into a record using their microphone, and attach a compressed image to any record that displays as a thumbnail — all working offline with no server requests.
+**User-visible outcome:** Users can export their records in TXT, DOC, or JSON format, optionally attach and preview an image when adding a new record, and use speech-to-text to dictate into the record text field — all without affecting any existing Records functionality.

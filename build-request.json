@@ -1,145 +1,106 @@
 {
   "kind": "build_request",
-  "title": "Add Records export formats, mic input, and image attachment to Records section",
+  "title": "Records: Add export formats (TXT/DOC/JSON), image attachment, and speech-to-text mic input",
   "projectName": "MyOrganizer Pro",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Create a recordExport utility (frontend/src/utils/recordExport.ts) that exports records as TXT, DOC (Word-compatible HTML), and JSON files. Each record must include its title/main text, body/details, date+time formatted using the existing dateFormatter utility (AM/PM, matching current app format), and any existing fields/tags. File naming must follow the pattern records_YYYY-MM-DD_HHMM.(txt/doc/json). Export must be entirely client-side and work offline — no backend calls. Do not remove or alter any existing export behavior in useRecords.ts or RecordsPage.tsx.",
+      "text": "In the Records section (RecordsPage.tsx and useRecords.ts), add three client-side export format options — TXT, WORD (DOC as Word-compatible HTML), and JSON — strictly alongside any existing export without modifying it. Each exported file must include all existing record fields exactly as stored, with date+time formatted as '28 Feb 2026, 3:45 AM' (using the existing dateFormatter utility). Filenames must follow the pattern: records_YYYY-MM-DD_HHMM.txt / .doc / .json. Export must be entirely client-side and offline. Implement export logic in a new utility file (e.g., frontend/src/utils/recordExport.ts) with new function names only, modeled after the existing noteExport.ts and routineExport.ts patterns.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-1"
         ],
         "quotes": [
-          "add export format options: TXT, WORD (DOC or DOCX; if DOCX is not feasible client-side, use DOC as Word-compatible HTML), JSON",
-          "Export must be client-side only and work offline.",
-          "File naming: records_YYYY-MM-DD_HHMM.(txt/doc/json)"
+          "In the Records section, add export format options: 1) TXT 2) WORD (DOC; Word-compatible HTML inside .doc) 3) JSON",
+          "Export must be client-side only and offline.",
+          "Filenames: records_YYYY-MM-DD_HHMM.txt / .doc / .json",
+          "Do NOT change how existing export works (if export already exists). Only add these extra format choices alongside it."
         ]
       },
       "acceptanceCriteria": [
-        "Exporting records as TXT produces a plain-text file with all records' title, body, date+time (AM/PM), and existing tags/fields.",
-        "Exporting records as WORD produces a .doc file (Word-compatible HTML) with all records formatted with title, body, date+time, and fields.",
-        "Exporting records as JSON produces a valid .json file containing all record data.",
-        "File name matches pattern records_YYYY-MM-DD_HHMM with correct extension.",
-        "All exports trigger a browser download with no server request.",
-        "Existing JSON export behavior in useRecords/RecordsPage is not broken or removed."
+        "Three new export buttons (TXT, DOC, JSON) appear in the Records section UI without removing or altering any existing export controls.",
+        "Clicking each button triggers a client-side download with the correct filename pattern (records_YYYY-MM-DD_HHMM.ext).",
+        "Exported content includes all existing record fields with date/time displayed as '28 Feb 2026, 3:45 AM'.",
+        "DOC file contains valid Word-compatible HTML wrapped appropriately.",
+        "JSON file contains a valid JSON array of record objects.",
+        "No backend calls are made during export.",
+        "Existing Records functionality is completely unchanged."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In RecordsPage.tsx, add TXT and WORD (DOC) export format options to the existing Records Import/Export area, alongside the existing JSON export. The new format buttons must be minimal UI additions that visually match the current design — do not change any layout, styling, or other UI elements. All three formats should be available (TXT, DOC, JSON).",
+      "text": "In the Record 'Add' modal/flow only (RecordsPage.tsx), add an 'Add Image' button/file input that allows the user to select one image from their device. Compress the image client-side before storing (max width 1600px, JPEG quality 0.7) using the existing imageCompression.ts utilities. Store the image under a NEW separate localStorage or IndexedDB key (e.g., recordImagesById keyed by record ID) — do NOT modify the existing Record schema or any existing storage keys. Show a small thumbnail preview inside the Add Record UI only. Do not modify the Records list UI. If a record details view already exists, show the image there; otherwise do not create a new details view. All image-related logic must use new helper functions with new names only.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-1"
         ],
         "quotes": [
-          "In the existing Records Import/Export area (or wherever export currently exists for Records), add export format options",
-          "Do not modify any other part of the app.",
-          "Do not remove or change existing export behavior; only add these formats/options."
+          "In the Record 'Add' flow ONLY, add an 'Add Image' button/input.",
+          "Store the image ONLY as an attached optional field without changing existing record fields",
+          "If modifying the record object is risky, store image attachments in a separate key (e.g., recordImagesById[recordId]) so record schema stays untouched.",
+          "Compress image client-side before saving: max width 1600px, quality ~0.7",
+          "Show a small thumbnail preview in the Add Record UI.",
+          "Do not modify the Records list UI"
         ]
       },
       "acceptanceCriteria": [
-        "The Records page shows TXT, WORD/DOC, and JSON export options in the existing export area.",
-        "Clicking each option downloads the corresponding file format.",
-        "No other UI layout, styling, or feature in RecordsPage is changed.",
-        "Existing export behavior is preserved."
+        "An 'Add Image' button appears inside the Record Add form only.",
+        "User can select one image file from their device.",
+        "Selected image is compressed to max 1600px width at ~0.7 JPEG quality before storage.",
+        "Image is stored under a new separate storage key (not mixed with existing record data).",
+        "A small thumbnail preview is shown in the Add Record UI after selection.",
+        "The Records list view is visually unchanged.",
+        "Existing record schema and all existing storage keys remain untouched.",
+        "All new functions have new unique names not overlapping any existing function names."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Add a microphone/speech-to-text button exclusively inside the Record Add/Edit modal/flow in the Records section. Use the browser Web Speech API (SpeechRecognition / webkitSpeechRecognition) via the existing useSpeechRecognition hook (frontend/src/hooks/useSpeechRecognition.ts). The button must support start/stop, display live/interim transcription, and append or insert transcribed text into the active record input field. Do not store audio — only the resulting text. If speech recognition is not supported by the browser, display a small inline message: 'Speech-to-text not supported on this browser.' Manual typing and saving must remain fully functional. Do not modify any other part of the Records UI or any other section of the app.",
+      "text": "In the Record 'Add' modal/flow only (RecordsPage.tsx), add a Mic button for speech-to-text using the browser Web Speech API (SpeechRecognition / webkitSpeechRecognition), following the pattern of the existing useSpeechRecognition.ts hook. Live transcription must append into the existing record text input field (title or body — whichever exists in the Add form). Do NOT store audio; store only the resulting transcribed text via the normal existing save path. If the Web Speech API is unsupported, show a small inline message: 'Speech-to-text not supported on this browser.' All new logic must use new helper functions and new event handlers with new names only.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-1"
         ],
         "quotes": [
-          "Add a Mic (speech-to-text) option ONLY inside the Record Add/Edit flow in the Records section.",
-          "Use browser Web Speech API (SpeechRecognition / webkitSpeechRecognition)",
-          "If not supported, show a small inline message: 'Speech-to-text not supported on this browser.'",
-          "Must not break manual typing or saving."
+          "In the Record 'Add' flow ONLY, add a Mic button for speech-to-text.",
+          "Use browser Web Speech API (SpeechRecognition / webkitSpeechRecognition).",
+          "Live transcription should append into the current record text field being typed (title/body input—whichever exists).",
+          "Do NOT store audio. Only store resulting text.",
+          "If unsupported, show a small inline message: 'Speech-to-text not supported on this browser.'"
         ]
       },
       "acceptanceCriteria": [
-        "A mic button appears only in the Record Add/Edit modal/flow.",
-        "Clicking the mic button starts speech recognition; clicking again stops it.",
-        "Live/interim transcription text is shown while listening.",
-        "Final transcribed text is appended/inserted into the active record input field.",
-        "No audio data is stored; only the final transcribed text is used.",
-        "On unsupported browsers, an inline message 'Speech-to-text not supported on this browser.' is shown instead of the button.",
-        "Manual typing and saving a record works as before.",
-        "No other part of the app UI is changed."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Update the Record data schema (frontend/src/db/schema.ts) to add an optional imageId (or imageData) field to the Record interface to support storing a reference to a compressed image. Also update the backend main.mo actor if the record structure is persisted there; otherwise this is frontend-only since records are stored in IndexedDB.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-3"
-        ],
-        "quotes": [
-          "Store the image with the record using the app's existing storage approach (prefer IndexedDB if available)"
-        ]
-      },
-      "acceptanceCriteria": [
-        "The Record TypeScript interface has an optional field for image reference (imageId or imageData).",
-        "Existing records without an image are unaffected.",
-        "No backend changes are required if records are stored only in IndexedDB."
-      ]
-    },
-    {
-      "id": "REQ-5",
-      "text": "Add an 'Add Image' button exclusively inside the Record Add/Edit modal/flow. When clicked, it opens a device file picker for image selection. After selection, compress the image client-side using the existing imageCompression utility (frontend/src/utils/imageCompression.ts) to a maximum width of 1600px at JPEG/WebP quality ~0.7. Store the compressed image in IndexedDB using the existing useImageStorage hook (frontend/src/hooks/useImageStorage.ts), linking it to the record via the new imageId field. Display the attached image as a thumbnail in the record view. While editing, allow removing or replacing the image. Do not change any other record layout beyond showing the image thumbnail in the appropriate place. Do not modify any other section of the app.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-3"
-        ],
-        "quotes": [
-          "Add an 'Add Image' option ONLY in the Record Add/Edit flow.",
-          "Compress image client-side before saving (to avoid storage issues): max width 1600px, JPEG/WebP quality ~0.7",
-          "Store the image with the record using the app's existing storage approach (prefer IndexedDB if available)",
-          "Display the attached image in the record view (thumbnail) and allow removing/replacing it while editing.",
-          "Do not change any other record layout besides showing the image thumbnail where appropriate."
-        ]
-      },
-      "acceptanceCriteria": [
-        "An 'Add Image' button appears only in the Record Add/Edit modal/flow.",
-        "Selecting an image compresses it client-side to max 1600px width and ~0.7 JPEG/WebP quality before storing.",
-        "Compressed image is stored in IndexedDB and linked to the record.",
-        "A thumbnail of the image is shown in the record view when an image is attached.",
-        "While editing, the user can remove or replace the attached image.",
-        "Records without an image are displayed exactly as before.",
-        "No other record list layout or other sections of the app are changed.",
-        "Everything works offline with no server requests for image storage."
+        "A Mic button appears inside the Record Add form only.",
+        "Clicking the Mic button activates speech recognition and appends live transcription to the existing text input field.",
+        "No audio data is stored; only transcribed text is retained.",
+        "The transcribed text flows through the existing save logic without any changes to that logic.",
+        "If SpeechRecognition API is unavailable, an inline message 'Speech-to-text not supported on this browser.' is displayed near the Mic button.",
+        "Existing Records functionality and save logic are completely unchanged.",
+        "All new functions and event handlers have unique new names."
       ]
     }
   ],
   "constraints": [
-    "Do not change any existing UI layout, styling, feature, or naming anywhere in the app.",
-    "Only add the specified features to the Records section (export formats, mic input, image attachment).",
-    "All new functionality must be client-side only and work offline.",
-    "Do not remove or alter existing export behavior in RecordsPage or useRecords.",
-    "Do not modify any files in frontend/src/hooks/useInternetIdentity.ts, frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or frontend/src/components/ui.",
-    "Use the existing useSpeechRecognition hook for mic/speech input.",
-    "Use the existing imageCompression utility for image compression.",
-    "Use the existing useImageStorage hook for image storage in IndexedDB.",
-    "Use the existing dateFormatter utility for date/time formatting in exports."
+    "Do NOT change any existing behavior, functions, variables, HTML structure, CSS classes, IDs, or UI logic anywhere in the app.",
+    "Do NOT modify existing localStorage keys or existing IndexedDB stores/schemas.",
+    "All additions must be strictly additive — no refactoring, renaming, or moving of existing code.",
+    "New image storage must use a completely separate storage key from existing record data.",
+    "All new helper functions and event handlers must have new unique names not overlapping existing ones.",
+    "Export must be entirely client-side with no backend calls.",
+    "Do NOT modify backend/main.mo or any backend logic."
   ],
   "nonGoals": [
-    "Adding mic input or image attachment to any section other than Records Add/Edit.",
-    "Adding export formats to any section other than Records.",
-    "Storing audio data.",
-    "Server-side or backend image storage.",
-    "Changing the backend actor (records are IndexedDB-only on the frontend).",
-    "Changing any UI layout, colors, typography, or styling.",
-    "Adding new navigation items or tabs.",
-    "Modifying Notes, Routines, Streak, Quote, or Settings sections."
+    "Modifying the existing JSON export in Records if one already exists.",
+    "Changing the Record data schema or existing record fields.",
+    "Adding a record details view if one does not already exist.",
+    "Showing images in the Records list view.",
+    "Storing or transmitting audio data.",
+    "Any changes outside the Records section.",
+    "Backend schema or API changes."
   ],
   "imageRequirements": {
     "required": [],

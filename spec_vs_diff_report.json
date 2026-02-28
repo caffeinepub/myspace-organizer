@@ -1,38 +1,31 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T01:03:01.286Z",
-  "summary": "The diff implements most of the required functionality: REQ-1 (recordExport utility), REQ-2 (TXT/DOC/JSON export buttons in RecordsPage), REQ-3 (mic/speech-to-text in Add/Edit modal), and REQ-5 (image attachment with compression and IndexedDB). However, REQ-4 specifically requires updating frontend/src/db/schema.ts to add the optional imageId field to the Record TypeScript interface, but no changes to that file are shown in the diff. Instead, the imageId field is defined inline in RecordsPage.tsx's local RecordEntry interface. Additionally, the constraints require using the existing useImageStorage hook and imageCompression utility, but the diff shows inline/custom implementations of both in RecordsPage.tsx rather than importing the existing hooks/utilities.",
+  "generatedAt": "2026-02-28T01:14:15.834Z",
+  "summary": "The diff implements all three requirements (REQ-1, REQ-2, REQ-3) with good coverage. A new recordExport.ts utility handles TXT/DOC/JSON export, a new useRecordImages.ts hook handles image compression and separate storage, and RecordsPage.tsx integrates export buttons, image attachment, and mic speech-to-text in the Add form. One minor gap exists: REQ-2 specifies using the existing imageCompression.ts utilities, but the diff implements its own canvas-based compression inline rather than calling the pre-existing utility. Additionally, the JSON export in recordExport.ts does not format date/time fields as '28 Feb 2026, 3:45 AM' — it serializes records as-is with raw timestamps.",
   "missing_requirements": [
     {
-      "id": "REQ-4",
-      "requirement": "Update the Record data schema (frontend/src/db/schema.ts) to add an optional imageId (or imageData) field to the Record interface.",
-      "reason": "No changes to frontend/src/db/schema.ts are present in the diff. The imageId field is only added to a local RecordEntry interface inside RecordsPage.tsx, not to the canonical schema file.",
+      "id": "REQ-2",
+      "requirement": "Compress the image client-side using the existing imageCompression.ts utilities.",
+      "reason": "The diff implements its own canvas-based image compression in useRecordImages.ts (compressRecordImage function) rather than calling the existing imageCompression.ts utilities as specified.",
       "evidence": [
-        "frontend/src/pages/RecordsPage.tsx"
-      ]
-    }
-  ],
-  "hallucinated_features": [
-    {
-      "description": "Inline image compression function in RecordsPage.tsx instead of using the existing imageCompression utility.",
-      "reason": "The build request constraint explicitly requires using the existing imageCompression utility (frontend/src/utils/imageCompression.ts), but the diff implements a custom compressImage function directly in RecordsPage.tsx rather than importing the existing utility.",
-      "evidence": [
-        "frontend/src/pages/RecordsPage.tsx"
+        "frontend/src/hooks/useRecordImages.ts"
       ]
     },
     {
-      "description": "Inline IndexedDB image storage helpers in RecordsPage.tsx instead of using the existing useImageStorage hook.",
-      "reason": "The build request constraint explicitly requires using the existing useImageStorage hook (frontend/src/hooks/useImageStorage.ts), but the diff implements custom dbSaveImage/dbGetImage/dbDeleteImage functions directly in RecordsPage.tsx rather than importing the existing hook.",
+      "id": "REQ-1",
+      "requirement": "Exported content includes all existing record fields with date/time displayed as '28 Feb 2026, 3:45 AM' (using the existing dateFormatter utility).",
+      "reason": "The JSON export in recordExport.ts uses JSON.stringify(records, null, 2) which serializes raw timestamp values without applying formatDateTime formatting. TXT and DOC exports do format dates, but JSON does not.",
       "evidence": [
-        "frontend/src/pages/RecordsPage.tsx"
+        "frontend/src/utils/recordExport.ts"
       ]
     }
   ],
-  "confidence": 0.82,
+  "hallucinated_features": [],
+  "confidence": 0.8,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/App.tsx",
+    "frontend/src/hooks/useRecordImages.ts",
     "frontend/src/pages/RecordsPage.tsx",
     "frontend/src/utils/recordExport.ts",
     "project_state.json"
