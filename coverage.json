@@ -1,53 +1,40 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-27T23:55:22.505Z",
+  "generatedAt": "2026-02-28T00:06:32.184Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 2,
+    "implemented": 2,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "When a label is added or renamed via the LabelManager modal, the Notes filter bar must update immediately without requiring a page refresh. The internal labels state used by NotesPage must be refreshed synchronously after the add/rename operation completes in IndexedDB. If the renamed label is currently selected as the active filter, keep it selected and update its displayed name in place. A newly added label must appear in the filter bar immediately.",
+        "summary": "Add a Mic button inside the NoteModal component (frontend/src/components/notes/NoteModal.tsx) in the note body (and title) input area. When tapped, use the browser's built-in Web Speech API (SpeechRecognition / webkitSpeechRecognition) to start live speech-to-text transcription. Transcribed text must be inserted/appended at the current cursor position in whichever field (title or body) is active. Provide stop/pause and resume controls. If SpeechRecognition is not supported, show an inline message: 'Speech-to-text not supported on this browser.' Do not store any raw audio — only the resulting text is saved. Transcription must not disrupt normal keyboard typing/editing, and the note must continue to save normally via the existing save flow.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useLabels.ts",
-          "frontend/src/components/notes/LabelManager.tsx",
-          "frontend/src/pages/NotesPage.tsx"
+          "frontend/src/hooks/useSpeechRecognition.ts",
+          "frontend/src/components/notes/NoteModal.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/components/notes/LabelManager.tsx",
-          "frontend/src/pages/NotesPage.tsx"
+          "frontend/src/hooks/useSpeechRecognition.ts",
+          "frontend/src/components/notes/NoteModal.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "In the Trash view of NotesPage, 'Delete permanently' must immediately remove the targeted note from IndexedDB and from the displayed note list without requiring a page refresh. The note must not reappear after a page refresh. Any counts or badges reflecting trashed note counts must update immediately after deletion.",
+        "summary": "Add a client-side 'Export as Document' option for individual notes. This must appear as a minimal addition in the existing note actions area (e.g., NoteModal or NoteCard context menu — whichever already has export/action options) without changing any existing controls. The export must generate a .DOC file (Word-compatible HTML document). Optionally also offer .PDF export if it can be done fully client-side without a server or external library that is complex to integrate; otherwise skip PDF and only provide DOC. The exported document must include: the note title, the note body with line breaks preserved, labels/tags displayed as a small line below the title, and the created/updated date-time formatted using the same format used elsewhere in the app (per frontend/src/utils/dateFormatter.ts, e.g. '28 Feb 2026, 3:45 AM'). The filename format must be: NoteTitle_YYYY-MM-DD_HHMM.doc (or .pdf). Export must work entirely client-side with no server calls.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/hooks/useNotes.ts",
-          "frontend/src/pages/NotesPage.tsx"
+          "frontend/src/utils/noteExport.ts",
+          "frontend/src/components/notes/NoteModal.tsx",
+          "frontend/src/components/notes/NoteCard.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/hooks/useNotes.ts",
-          "frontend/src/pages/NotesPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "If 'Empty Trash' exists in the Trash view, it must permanently delete all trashed notes from IndexedDB and clear them from the UI instantly. After the operation, no trashed notes should appear on refresh and any trash count badges must reset to zero immediately.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useNotes.ts",
-          "frontend/src/pages/NotesPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useNotes.ts",
-          "frontend/src/pages/NotesPage.tsx"
+          "frontend/src/utils/noteExport.ts",
+          "frontend/src/components/notes/NoteModal.tsx"
         ]
       }
     ]
@@ -57,9 +44,9 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/components/notes/LabelManager.tsx",
-    "frontend/src/hooks/useNotes.ts",
-    "frontend/src/pages/NotesPage.tsx",
+    "frontend/src/components/notes/NoteModal.tsx",
+    "frontend/src/hooks/useSpeechRecognition.ts",
+    "frontend/src/utils/noteExport.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

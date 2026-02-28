@@ -1,26 +1,42 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-27T23:55:22.501Z",
-  "summary": "The diff addresses REQ-1 (label instant update) and REQ-2 (permanent delete from trash) with reasonable coverage. REQ-1 is well-implemented: LabelManager passes rename change info via onLabelsChanged, NotesPage calls reloadLabels and updates labelFilter on rename. REQ-2 is addressed via deleteNote in useNotes.ts which removes from IndexedDB and state immediately. REQ-3 (Empty Trash) is not explicitly evidenced in the diff—no emptyTrash or bulkDelete-all-trashed function is visible in the truncated files, though it may exist in truncated portions.",
+  "generatedAt": "2026-02-28T00:06:32.180Z",
+  "summary": "Both REQ-1 (Mic/Speech-to-Text) and REQ-2 (Export as Document) are substantially implemented. A useSpeechRecognition hook, noteExport utility, and NoteModal modifications are present. However, several specific acceptance criteria cannot be fully verified from the truncated diff, and one AC item (pause/resume controls distinct from stop) appears potentially missing.",
   "missing_requirements": [
     {
-      "id": "REQ-3",
-      "requirement": "Empty Trash must permanently delete all trashed notes from IndexedDB and clear them from the UI instantly, with trash count badges resetting to zero immediately.",
-      "reason": "No emptyTrash function, bulk-delete-all-trashed operation, or corresponding UI wiring is visible anywhere in the diff. The useNotes.ts and NotesPage.tsx diffs are truncated but no mention of 'emptyTrash', 'empty trash', or bulk permanent deletion of all trashed notes appears in the visible portions or file summaries.",
+      "id": "REQ-1",
+      "requirement": "Provide stop/pause AND resume controls while recording (pause and resume are distinct from stop).",
+      "reason": "The useSpeechRecognition hook exposes only startListening and stopListening with no explicit pause/resume distinction. The NoteModal diff is truncated so UI controls cannot be fully verified, but the hook itself provides no pause/resume API.",
       "evidence": [
-        "frontend/src/hooks/useNotes.ts",
-        "frontend/src/pages/NotesPage.tsx"
+        "frontend/src/hooks/useSpeechRecognition.ts",
+        "frontend/src/components/notes/NoteModal.tsx"
+      ]
+    },
+    {
+      "id": "REQ-1",
+      "requirement": "Transcribed text must be inserted/appended at the current cursor position in whichever field (title or body) is active.",
+      "reason": "The NoteModal diff is truncated after the transcript-appending useEffect begins. Active field tracking and lastTranscriptRef are set up, but the actual cursor-position insertion logic (selectionStart/selectionEnd) cannot be confirmed from the truncated content.",
+      "evidence": [
+        "frontend/src/components/notes/NoteModal.tsx"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.65,
+  "hallucinated_features": [
+    {
+      "description": "Checklist note type export with checkbox symbols and strikethrough styling in the exported DOC file.",
+      "reason": "The build request only required exporting note title, body with line breaks preserved, labels, and date-time. Checklist-specific rendering logic was not requested.",
+      "evidence": [
+        "frontend/src/utils/noteExport.ts"
+      ]
+    }
+  ],
+  "confidence": 0.72,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/components/notes/LabelManager.tsx",
-    "frontend/src/hooks/useNotes.ts",
-    "frontend/src/pages/NotesPage.tsx",
+    "frontend/src/components/notes/NoteModal.tsx",
+    "frontend/src/hooks/useSpeechRecognition.ts",
+    "frontend/src/utils/noteExport.ts",
     "project_state.json"
   ]
 }

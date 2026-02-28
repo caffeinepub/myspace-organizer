@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Pin, Archive, Trash2, Bell, X, Plus, Minus, Image as ImageIcon } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Pin, Archive, Trash2, Bell, X, Plus, Minus, Image as ImageIcon, Mic, MicOff, FileDown } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import type { Note, NoteChecklistItem } from '../../db/schema';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,8 @@ import { useImageStorage } from '../../hooks/useImageStorage';
 import { compressImage, generateThumbnail } from '../../utils/imageCompression';
 import { showErrorToast } from '../../store/toastStore';
 import { format } from 'date-fns';
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
+import { exportNoteAsDoc } from '../../utils/noteExport';
 
 const NOTE_COLORS = [
   { label: 'Default', value: 'default' },
@@ -50,6 +52,26 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
   const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [newCheckItem, setNewCheckItem] = useState('');
 
+  // Track which field is "active" for speech insertion: 'title' | 'content'
+  const [activeField, setActiveField] = useState<'title' | 'content'>('content');
+  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const titleRef = useRef<HTMLInputElement>(null);
+
+  // Speech recognition
+  const {
+    isSupported: speechSupported,
+    isListening,
+    transcript,
+    interimTranscript,
+    error: speechError,
+    startListening,
+    stopListening,
+    resetTranscript,
+  } = useSpeechRecognition();
+
+  // Track the last transcript length we've already appended, to avoid double-appending
+  const lastTranscriptRef = useRef('');
+
   useEffect(() => {
     if (note) {
       setTitle(note.title);
@@ -65,8 +87,48 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
     }
   }, [note, getImageUrl]);
 
+  // When modal closes/opens, stop listening and reset
+  useEffect(() => {
+    if (!isOpen) {
+      if (isListening) stopListening();
+      resetTranscript();
+      lastTranscriptRef.current = '';
+    }
+  }, [isOpen, isListening, stopListening, resetTranscript]);
+
+  // Append new transcript text to the active field
+  useEffect(() => {
+    if (!transcript) return;
+    const newPart = transcript.slice(lastTranscriptRef.current.length);
+    if (!newPart) return;
+    lastTranscriptRef.current = transcript;
+
+    if (activeField === 'title') {
+      setTitle(prev => {
+        const sep = prev && !prev.endsWith(' ') ? ' ' : '';
+        return prev + sep + newPart.trim();
+      });
+    } else {
+      setContent(prev => {
+        const sep = prev && !prev.endsWith(' ') && !prev.endsWith('\n') ? ' ' : '';
+        return prev + sep + newPart.trim();
+      });
+    }
+  }, [transcript, activeField]);
+
+  const handleMicToggle = useCallback(() => {
+    if (isListening) {
+      stopListening();
+    } else {
+      resetTranscript();
+      lastTranscriptRef.current = '';
+      startListening();
+    }
+  }, [isListening, startListening, stopListening, resetTranscript]);
+
   const handleSave = useCallback(() => {
     if (!note) return;
+    if (isListening) stopListening();
     const updated: Note = {
       ...note,
       title,
@@ -78,7 +140,21 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
     };
     onSave(updated);
     onClose();
-  }, [note, title, content, checklistItems, color, selectedLabels, reminderAt, onSave, onClose]);
+  }, [note, title, content, checklistItems, color, selectedLabels, reminderAt, onSave, onClose, isListening, stopListening]);
+
+  const handleExportDoc = useCallback(() => {
+    if (!note) return;
+    const current: Note = {
+      ...note,
+      title,
+      content,
+      checklistItems,
+      color,
+      labels: selectedLabels,
+      reminderAt: reminderAt ? new Date(reminderAt).getTime() : null,
+    };
+    exportNoteAsDoc(current);
+  }, [note, title, content, checklistItems, color, selectedLabels, reminderAt]);
 
   const addCheckItem = useCallback(() => {
     if (!newCheckItem.trim()) return;
@@ -157,6 +233,15 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
             >
               <Archive className="w-4 h-4" />
             </button>
+            {/* Export as Document button */}
+            <button
+              onClick={handleExportDoc}
+              className="p-1.5 rounded-lg hover:bg-black/10 transition-colors text-muted-foreground"
+              aria-label="Export note as document"
+              title="Export as .DOC"
+            >
+              <FileDown className="w-4 h-4" />
+            </button>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -223,8 +308,10 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
 
         {/* Title */}
         <input
+          ref={titleRef}
           value={title}
           onChange={e => setTitle(e.target.value)}
+          onFocus={() => setActiveField('title')}
           placeholder="Title"
           className="w-full bg-transparent text-base font-semibold placeholder:text-muted-foreground/60 outline-none mb-2"
           aria-label="Note title"
@@ -232,13 +319,60 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
 
         {/* Content based on type */}
         {note.type === 'text' && (
-          <textarea
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            placeholder="Take a note..."
-            className="w-full bg-transparent text-sm placeholder:text-muted-foreground/60 outline-none resize-none min-h-[120px]"
-            aria-label="Note content"
-          />
+          <div className="relative">
+            <textarea
+              ref={contentRef}
+              value={content + (isListening && interimTranscript ? interimTranscript : '')}
+              onChange={e => {
+                // Only update content if not the interim part
+                const val = e.target.value;
+                if (isListening && interimTranscript && val.endsWith(interimTranscript)) {
+                  setContent(val.slice(0, val.length - interimTranscript.length));
+                } else {
+                  setContent(val);
+                }
+              }}
+              onFocus={() => setActiveField('content')}
+              placeholder="Take a note..."
+              className="w-full bg-transparent text-sm placeholder:text-muted-foreground/60 outline-none resize-none min-h-[120px] pr-8"
+              aria-label="Note content"
+            />
+            {/* Mic button — bottom-right of textarea */}
+            <div className="absolute bottom-1 right-0 flex items-center">
+              {!speechSupported ? (
+                <span className="text-[10px] text-muted-foreground italic">Speech not supported</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleMicToggle}
+                  className={`p-1 rounded-lg transition-colors ${
+                    isListening
+                      ? 'text-destructive hover:bg-destructive/10 animate-pulse'
+                      : 'text-muted-foreground hover:bg-black/10'
+                  }`}
+                  aria-label={isListening ? 'Stop speech recognition' : 'Start speech recognition'}
+                  title={isListening ? 'Stop dictation' : 'Dictate note'}
+                >
+                  {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Speech status / error for text notes */}
+        {note.type === 'text' && (
+          <>
+            {isListening && (
+              <p className="text-[10px] text-primary mt-0.5 flex items-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+                Listening…{interimTranscript ? ` "${interimTranscript}"` : ''}
+              </p>
+            )}
+            {speechError && (
+              <p className="text-[10px] text-destructive mt-0.5">{speechError}</p>
+            )}
+          </>
         )}
 
         {note.type === 'checklist' && (

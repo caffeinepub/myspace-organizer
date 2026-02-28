@@ -1,86 +1,76 @@
 {
   "kind": "build_request",
-  "title": "Fix: Labels instant update and Trash permanent delete",
-  "priority": "high",
+  "title": "Add Speech-to-Text Mic Input and DOC Export to Notes",
+  "projectName": "MyOrganizer Pro",
+  "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "When a label is added or renamed via the LabelManager modal, the Notes filter bar must update immediately without requiring a page refresh. The internal labels state used by NotesPage must be refreshed synchronously after the add/rename operation completes in IndexedDB. If the renamed label is currently selected as the active filter, keep it selected and update its displayed name in place. A newly added label must appear in the filter bar immediately.",
+      "text": "Add a Mic button inside the NoteModal component (frontend/src/components/notes/NoteModal.tsx) in the note body (and title) input area. When tapped, use the browser's built-in Web Speech API (SpeechRecognition / webkitSpeechRecognition) to start live speech-to-text transcription. Transcribed text must be inserted/appended at the current cursor position in whichever field (title or body) is active. Provide stop/pause and resume controls. If SpeechRecognition is not supported, show an inline message: 'Speech-to-text not supported on this browser.' Do not store any raw audio — only the resulting text is saved. Transcription must not disrupt normal keyboard typing/editing, and the note must continue to save normally via the existing save flow.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-6"
         ],
         "quotes": [
-          "When the user adds a new label or renames an existing label, the Notes filter bar must update immediately (no page refresh, no reload required).",
-          "If the renamed label was currently selected, keep it selected and update its displayed name instantly.",
-          "Make sure both the UI state and stored data are updated in the same action so they never get out of sync."
+          "Add a 'Mic' (audio input) option ONLY inside the Notes add/edit flow (where the note text is entered).",
+          "Start speech-to-text using the browser's built-in Web Speech API (SpeechRecognition / webkitSpeechRecognition).",
+          "Transcribe speech live and insert/append into the note body (and/or title if cursor is there).",
+          "Allow stop/pause and resume.",
+          "If SpeechRecognition is not supported, show a simple inline message: 'Speech-to-text not supported on this browser.'",
+          "Do NOT store raw audio. Only store the resulting text in the note."
         ]
       },
       "acceptanceCriteria": [
-        "Adding a label via LabelManager causes it to appear in the Notes filter bar without any page refresh.",
-        "Renaming a label via LabelManager updates the label name in the Notes filter bar without any page refresh.",
-        "If the active filter label was renamed, it remains selected and shows the new name immediately.",
-        "The updated labels are persisted in IndexedDB (same storage method already used) and survive a page refresh.",
-        "UI state and IndexedDB state are always in sync after add or rename."
+        "A Mic button appears in the note body/title area of the NoteModal without altering any other existing UI elements.",
+        "Tapping Mic starts live transcription using SpeechRecognition / webkitSpeechRecognition.",
+        "Transcribed text is appended/inserted into the active input field (title or body) in real time.",
+        "Stop/pause and resume controls are available while recording.",
+        "On browsers without SpeechRecognition support, the inline message 'Speech-to-text not supported on this browser.' is displayed instead of the Mic button or on tap.",
+        "No raw audio is persisted; only text is stored via the existing note save mechanism.",
+        "Normal keyboard typing still works during and after transcription, and the note saves successfully."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "In the Trash view of NotesPage, 'Delete permanently' must immediately remove the targeted note from IndexedDB and from the displayed note list without requiring a page refresh. The note must not reappear after a page refresh. Any counts or badges reflecting trashed note counts must update immediately after deletion.",
+      "text": "Add a client-side 'Export as Document' option for individual notes. This must appear as a minimal addition in the existing note actions area (e.g., NoteModal or NoteCard context menu — whichever already has export/action options) without changing any existing controls. The export must generate a .DOC file (Word-compatible HTML document). Optionally also offer .PDF export if it can be done fully client-side without a server or external library that is complex to integrate; otherwise skip PDF and only provide DOC. The exported document must include: the note title, the note body with line breaks preserved, labels/tags displayed as a small line below the title, and the created/updated date-time formatted using the same format used elsewhere in the app (per frontend/src/utils/dateFormatter.ts, e.g. '28 Feb 2026, 3:45 AM'). The filename format must be: NoteTitle_YYYY-MM-DD_HHMM.doc (or .pdf). Export must work entirely client-side with no server calls.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-3"
+          "msg-6"
         ],
         "quotes": [
-          "In the Trash view, 'Delete permanently' must actually remove the note from storage and from the UI instantly.",
-          "The deleted note must not reappear after refresh.",
-          "Counts/badges (if any) should update immediately."
+          "In the existing Export area or within Notes actions (use whichever is already present), add: A) Export selected note as .DOC (Word-compatible HTML doc) OR .DOCX if available B) Export selected note as .PDF (optional if easy; if not, skip PDF and keep DOC)",
+          "Export must include: Note title, Note body (preserve line breaks), Labels/tags (as a small line under title), Created/Updated date-time (use the same date+time format used elsewhere in the app)",
+          "File name format: NoteTitle_YYYY-MM-DD_HHMM.doc (or docx/pdf)",
+          "Export must work fully client-side (no server)."
         ]
       },
       "acceptanceCriteria": [
-        "Clicking 'Delete permanently' on a trashed note removes it from the UI list instantly.",
-        "The permanently deleted note is removed from IndexedDB and does not reappear on page refresh.",
-        "Any count or badge for trashed notes decrements immediately after permanent deletion.",
-        "The 'Restore' action for other trashed notes continues to work correctly.",
-        "No new UI elements are introduced."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "If 'Empty Trash' exists in the Trash view, it must permanently delete all trashed notes from IndexedDB and clear them from the UI instantly. After the operation, no trashed notes should appear on refresh and any trash count badges must reset to zero immediately.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-3"
-        ],
-        "quotes": [
-          "Also ensure 'Empty Trash' (if present) permanently deletes all trashed notes and updates the UI instantly."
-        ]
-      },
-      "acceptanceCriteria": [
-        "Clicking 'Empty Trash' removes all trashed notes from the UI list instantly.",
-        "All trashed notes are deleted from IndexedDB and do not reappear on page refresh.",
-        "Any trash count badges reset to zero immediately after Empty Trash.",
-        "No new UI elements are introduced."
+        "An 'Export as Document' option is added to the existing note actions area (NoteModal or NoteCard context menu) without removing or relocating any existing controls.",
+        "Clicking the option triggers a client-side download of a .DOC (HTML-based Word-compatible) file.",
+        "The exported file contains: note title, note body with line breaks preserved, labels/tags on a small line beneath the title, and created/updated date-time in the app's standard format.",
+        "The downloaded filename follows the pattern NoteTitle_YYYY-MM-DD_HHMM.doc.",
+        "No server request is made during export; the file is generated and downloaded entirely in the browser.",
+        "Existing export functionality (if any) is unaffected."
       ]
     }
   ],
   "constraints": [
-    "Do NOT change any UI layout, visual design, styling, or color.",
-    "Do NOT rename any components, functions, hooks, or files.",
-    "Do NOT add any new UI elements.",
-    "Do NOT change any feature behavior beyond the two bugs described.",
-    "Storage method must remain IndexedDB as already used by the app.",
-    "The 'Restore' action in Trash must continue to work as-is."
+    "Do NOT change any existing UI layout, styling, feature behavior, or component structure outside of the two new additions.",
+    "Do NOT alter existing data structures in the DB schema unless strictly required; any such change must be fully backward-compatible.",
+    "Do NOT modify any file listed in frontend.immutablePaths.",
+    "Mic button and Export as Document option must visually match the current design system (same colors, typography, spacing).",
+    "No raw audio may be stored anywhere.",
+    "All new functionality must be purely client-side with no backend or server calls."
   ],
   "nonGoals": [
-    "Any UI or layout changes.",
-    "Any new features or pages.",
-    "Changes to backend Motoko code.",
-    "Changes to any other section of the app (Routines, Records, Streak, Quotes, Settings, Home).",
-    "Changing the storage mechanism from IndexedDB."
+    "PDF export is optional; do not implement it if it requires a non-trivial external library or server-side processing.",
+    "No changes to the backend (main.mo) are required.",
+    "No changes to routing, navigation, or any page other than Notes-related components.",
+    "No new labels, data fields, or DB tables unless strictly required for backward-compatible note text storage.",
+    "No changes to existing export features (e.g., JSON export in RecordsPage or SettingsPage).",
+    "No real-time collaboration, cloud sync, or server-side transcription."
   ],
   "imageRequirements": {
     "required": [],

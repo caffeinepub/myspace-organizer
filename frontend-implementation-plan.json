@@ -1,78 +1,59 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Fix: Labels instant update and Trash permanent delete",
+  "title": "Add Speech-to-Text Mic Input and DOC Export to Notes",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "When a label is added or renamed via LabelManager, the Notes filter bar must update immediately without page refresh, keeping selected label active if renamed",
+      "summary": "Add speech-to-text mic button in NoteModal using Web Speech API with live transcription, stop/pause/resume controls, and browser compatibility fallback",
       "acceptanceCriteria": [
-        "Adding a label via LabelManager causes it to appear in the Notes filter bar without any page refresh.",
-        "Renaming a label via LabelManager updates the label name in the Notes filter bar without any page refresh.",
-        "If the active filter label was renamed, it remains selected and shows the new name immediately.",
-        "The updated labels are persisted in IndexedDB (same storage method already used) and survive a page refresh.",
-        "UI state and IndexedDB state are always in sync after add or rename."
+        "A Mic button appears in the note body/title area of the NoteModal without altering any other existing UI elements.",
+        "Tapping Mic starts live transcription using SpeechRecognition / webkitSpeechRecognition.",
+        "Transcribed text is appended/inserted into the active input field (title or body) in real time.",
+        "Stop/pause and resume controls are available while recording.",
+        "On browsers without SpeechRecognition support, the inline message 'Speech-to-text not supported on this browser.' is displayed instead of the Mic button or on tap.",
+        "No raw audio is persisted; only text is stored via the existing note save mechanism.",
+        "Normal keyboard typing still works during and after transcription, and the note saves successfully."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useLabels.ts",
-          "operation": "modify",
-          "description": "Modify addLabel and renameLabel functions to return the operation result synchronously and ensure IndexedDB updates complete before returning. Verify that these functions properly handle duplicate/reserved name guards and complete all database writes atomically."
+          "path": "frontend/src/hooks/useSpeechRecognition.ts",
+          "operation": "create",
+          "description": "Create a custom React hook that wraps the Web Speech API (SpeechRecognition / webkitSpeechRecognition). The hook must expose: isSupported (boolean), isListening (boolean), transcript (string), error (string | null), startListening, stopListening, and resetTranscript functions. Handle browser compatibility by checking for window.SpeechRecognition or window.webkitSpeechRecognition. Implement continuous recognition with interim results. Return null or appropriate defaults when the API is unavailable."
         },
         {
-          "path": "frontend/src/components/notes/LabelManager.tsx",
+          "path": "frontend/src/components/notes/NoteModal.tsx",
           "operation": "modify",
-          "description": "Update the component to call a parent-provided refresh callback after successful add or rename operations in useLabels. Pass the updated label data (including new ID for added labels and updated name for renamed labels) back to the parent NotesPage component to trigger immediate UI refresh."
-        },
-        {
-          "path": "frontend/src/pages/NotesPage.tsx",
-          "operation": "modify",
-          "description": "Add a labels refresh mechanism that reloads the labels list from IndexedDB immediately after LabelManager completes an add or rename operation. When a label is renamed and it matches the currently active filter, update the active filter state to use the new label name while keeping the same label ID selected. Ensure the filter bar re-renders with the updated label list without requiring page reload."
+          "description": "Add a Mic button adjacent to both the title input and body textarea within the NoteModal. Use the useSpeechRecognition hook to manage speech-to-text state. When the Mic button is tapped, call startListening and insert transcribed text at the current cursor position in the active field (title or body). Display stop/pause and resume controls while recording. Show the inline message 'Speech-to-text not supported on this browser.' if isSupported is false. Ensure the Mic button styling matches the existing design system (colors, typography, spacing). Preserve existing keyboard input behavior and note save flow. Do not store any audio data; only persist the resulting text via the existing save mechanism."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "In Trash view, 'Delete permanently' must immediately remove the note from IndexedDB and UI without page refresh, updating counts instantly",
+      "summary": "Add client-side 'Export as Document' option to note actions that generates a .DOC file (Word-compatible HTML) with title, body, labels, and formatted date-time",
       "acceptanceCriteria": [
-        "Clicking 'Delete permanently' on a trashed note removes it from the UI list instantly.",
-        "The permanently deleted note is removed from IndexedDB and does not reappear on page refresh.",
-        "Any count or badge for trashed notes decrements immediately after permanent deletion.",
-        "The 'Restore' action for other trashed notes continues to work correctly.",
-        "No new UI elements are introduced."
+        "An 'Export as Document' option is added to the existing note actions area (NoteModal or NoteCard context menu) without removing or relocating any existing controls.",
+        "Clicking the option triggers a client-side download of a .DOC (HTML-based Word-compatible) file.",
+        "The exported file contains: note title, note body with line breaks preserved, labels/tags on a small line beneath the title, and created/updated date-time in the app's standard format.",
+        "The downloaded filename follows the pattern NoteTitle_YYYY-MM-DD_HHMM.doc.",
+        "No server request is made during export; the file is generated and downloaded entirely in the browser.",
+        "Existing export functionality (if any) is unaffected."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useNotes.ts",
-          "operation": "modify",
-          "description": "Add or modify the permanent delete capability to fully remove a note from the IndexedDB notes table (not just mark it as deleted). Ensure this function removes the note record completely and triggers an immediate state update to refresh the notes list in memory."
+          "path": "frontend/src/utils/noteExport.ts",
+          "operation": "create",
+          "description": "Create a utility function exportNoteAsDoc that accepts a note object (with title, body, labels array, createdAt, and updatedAt). Generate a Word-compatible HTML document structure containing: the note title as a heading, labels/tags displayed as a small line below the title, the note body with line breaks converted to <br> or <p> tags, and the created/updated date-time formatted using the dateFormatter utility (e.g., '28 Feb 2026, 3:45 AM'). Create a Blob with MIME type 'application/msword' and trigger a download with filename format NoteTitle_YYYY-MM-DD_HHMM.doc (sanitize the title to remove invalid filename characters). All processing must be client-side with no server calls."
         },
         {
-          "path": "frontend/src/pages/NotesPage.tsx",
+          "path": "frontend/src/components/notes/NoteModal.tsx",
           "operation": "modify",
-          "description": "Wire the permanent delete action in the Trash view to call the permanent delete function from useNotes and immediately refresh the displayed notes list and trash count. Ensure the UI updates synchronously after the IndexedDB delete completes, removing the note from the rendered list without page refresh."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "If 'Empty Trash' exists, it must permanently delete all trashed notes from IndexedDB and clear UI instantly, resetting trash count to zero",
-      "acceptanceCriteria": [
-        "Clicking 'Empty Trash' removes all trashed notes from the UI list instantly.",
-        "All trashed notes are deleted from IndexedDB and do not reappear on page refresh.",
-        "Any trash count badges reset to zero immediately after Empty Trash.",
-        "No new UI elements are introduced."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useNotes.ts",
-          "operation": "modify",
-          "description": "Add or modify an emptyTrash function that queries all notes with isTrashed=true and permanently deletes them from the IndexedDB notes table in a batch operation. Ensure the function triggers an immediate state update after all deletions complete."
+          "description": "Add an 'Export as Document' button or menu item to the existing note actions area within the NoteModal. The control must be placed alongside any existing action buttons without removing or relocating them. When clicked, call the exportNoteAsDoc utility function from frontend/src/utils/noteExport.ts, passing the current note data. Ensure the button styling matches the existing design system (colors, typography, spacing). The export must work entirely client-side with no backend calls."
         },
         {
-          "path": "frontend/src/pages/NotesPage.tsx",
+          "path": "frontend/src/components/notes/NoteCard.tsx",
           "operation": "modify",
-          "description": "If an 'Empty Trash' button or action exists in the Trash view, wire it to call the emptyTrash function from useNotes and immediately refresh the notes list and trash count to reflect zero trashed notes. Ensure the UI clears all trashed notes from display and resets the count badge synchronously after the batch delete completes."
+          "description": "Add an 'Export as Document' option to the existing context menu in NoteCard if it already has export or action options. When selected, call the exportNoteAsDoc utility function from frontend/src/utils/noteExport.ts, passing the note data. Ensure the menu item styling matches the existing design system. The export must work entirely client-side with no backend calls. If no context menu exists, skip this operation and rely solely on the NoteModal implementation."
         }
       ]
     }

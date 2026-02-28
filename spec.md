@@ -1,12 +1,17 @@
 # Specification
 
 ## Summary
-**Goal:** Fix two bugs in the Notes section: labels not updating instantly in the filter bar after add/rename, and "Delete permanently" / "Empty Trash" not immediately removing notes from the UI and IndexedDB.
+**Goal:** Add speech-to-text mic input and DOC export functionality to the Notes add/edit flow in MyOrganizer Pro.
 
 **Planned changes:**
-- After adding or renaming a label in LabelManager, synchronously refresh the labels state in NotesPage so the filter bar updates immediately without a page refresh.
-- If the currently active filter label was renamed, keep it selected and display the new name instantly.
-- Fix "Delete permanently" in the Trash view to immediately remove the note from both the UI list and IndexedDB, with no reappearance on refresh.
-- Fix "Empty Trash" (if present) to immediately delete all trashed notes from IndexedDB and clear the UI list, resetting any trash count badges to zero instantly.
+- Add a Mic button inside the NoteModal component (in the title and body input areas) that uses the browser's Web Speech API (SpeechRecognition / webkitSpeechRecognition) to perform live speech-to-text transcription
+- Transcribed text is inserted/appended at the current cursor position in the active field (title or body) in real time
+- Provide stop/pause and resume controls while recording is active
+- Display an inline message "Speech-to-text not supported on this browser." on unsupported browsers instead of the Mic button
+- No raw audio is stored; only the resulting text is saved via the existing note save flow
+- Add an "Export as Document" option to the existing note actions area (NoteModal or NoteCard context menu) without altering existing controls
+- Export generates a client-side .DOC (Word-compatible HTML) file containing the note title, body (line breaks preserved), labels/tags below the title, and created/updated date-time in the app's standard format
+- Downloaded filename follows the pattern: `NoteTitle_YYYY-MM-DD_HHMM.doc`
+- All new functionality is purely client-side with no server calls
 
-**User-visible outcome:** Users can add or rename labels and see the changes reflected in the Notes filter bar immediately. Permanently deleting individual notes or emptying the trash in the Trash view removes them from the UI and storage instantly, with no stale data after a page refresh.
+**User-visible outcome:** Users can dictate notes using their microphone directly inside the note editor, and can export individual notes as .DOC files from the note actions area.
