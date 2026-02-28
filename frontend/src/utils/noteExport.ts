@@ -1,138 +1,123 @@
-import type { Note } from '../db/schema';
-import { formatDateTime } from './dateFormatter';
+import { Note } from '../db/schema';
 
-/**
- * Sanitizes a string for use as a filename by removing/replacing invalid characters.
- */
-function sanitizeFilename(name: string): string {
-  return name
-    .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
-    .replace(/\s+/g, '_')
-    .trim()
-    .slice(0, 100) || 'Note';
-}
-
-/**
- * Formats a timestamp as YYYY-MM-DD_HHMM for use in filenames.
- */
-function formatFilenameDate(timestamp: number): string {
-  const d = new Date(timestamp);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
+function getTimestamp(): string {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const min = String(now.getMinutes()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}_${hh}${min}`;
 }
 
-/**
- * Converts plain text with newlines to HTML paragraphs/line breaks.
- */
-function textToHtml(text: string): string {
-  return text
-    .split('\n')
-    .map(line => `<p>${line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') || '&nbsp;'}</p>`)
-    .join('');
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-/**
- * Exports a note as a Word-compatible .DOC file (HTML-based).
- * Includes title, labels, body, and created/updated timestamps.
- * Triggers a client-side download — no server calls.
- */
-export function exportNoteAsDoc(note: Note): void {
-  const titleText = note.title || 'Untitled Note';
-  const labelsLine = note.labels.length > 0 ? note.labels.join(', ') : '';
-  const createdStr = formatDateTime(note.createdAt);
-  const updatedStr = formatDateTime(note.updatedAt);
-
-  // Build checklist HTML if applicable
-  let bodyHtml = '';
-  if (note.type === 'checklist') {
-    const items = note.checklistItems
-      .map(item => {
-        const checked = item.checked ? '☑' : '☐';
-        const style = item.checked ? 'text-decoration: line-through; color: #888;' : '';
-        return `<p style="${style}">${checked} ${item.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`;
-      })
-      .join('');
-    bodyHtml = items || '<p>&nbsp;</p>';
-  } else {
-    bodyHtml = textToHtml(note.content);
-  }
-
-  const html = `
-<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:w="urn:schemas-microsoft-com:office:word"
-      xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-  <meta charset="UTF-8">
-  <meta name=ProgId content=Word.Document>
-  <meta name=Generator content="Microsoft Word 15">
-  <meta name=Originator content="Microsoft Word 15">
-  <!--[if gte mso 9]>
-  <xml>
-    <w:WordDocument>
-      <w:View>Print</w:View>
-      <w:Zoom>90</w:Zoom>
-      <w:DoNotOptimizeForBrowser/>
-    </w:WordDocument>
-  </xml>
-  <![endif]-->
-  <style>
-    body {
-      font-family: Calibri, Arial, sans-serif;
-      font-size: 12pt;
-      margin: 2cm;
-      color: #1e293b;
-    }
-    h1 {
-      font-size: 20pt;
-      font-weight: bold;
-      margin-bottom: 4pt;
-      color: #0f172a;
-    }
-    .labels {
-      font-size: 9pt;
-      color: #64748b;
-      margin-bottom: 4pt;
-    }
-    .dates {
-      font-size: 9pt;
-      color: #94a3b8;
-      margin-bottom: 16pt;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 8pt;
-    }
-    p {
-      margin: 0 0 6pt 0;
-      line-height: 1.5;
-    }
-  </style>
-</head>
-<body>
-  <h1>${titleText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h1>
-  ${labelsLine ? `<p class="labels">🏷️ ${labelsLine.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` : ''}
-  <p class="dates">
-    Created: ${createdStr}${updatedStr && updatedStr !== createdStr ? `&nbsp;&nbsp;|&nbsp;&nbsp;Updated: ${updatedStr}` : ''}
-  </p>
-  ${bodyHtml}
-</body>
-</html>`.trim();
-
-  const blob = new Blob([html], { type: 'application/msword' });
+function triggerDownload(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
-
-  const sanitizedTitle = sanitizeFilename(titleText);
-  const dateStr = formatFilenameDate(note.updatedAt || note.createdAt || Date.now());
-  const filename = `${sanitizedTitle}_${dateStr}.doc`;
-
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  URL.revokeObjectURL(url);
+}
+
+function getNoteBody(note: Note): string {
+  if (note.type === 'checklist') {
+    return note.checklistItems.map(i => `${i.checked ? '[x]' : '[ ]'} ${i.text}`).join('\n');
+  }
+  return note.content || '';
+}
+
+function formatNoteForTxt(note: Note): string {
+  const sep = '='.repeat(60);
+  const lines: string[] = [
+    sep,
+    `Title: ${note.title || '(untitled)'}`,
+    `Labels: ${(note.labels || []).join(', ') || 'none'}`,
+    `Pinned: ${note.pinned ? 'Yes' : 'No'}`,
+    `Archived: ${note.archived ? 'Yes' : 'No'}`,
+    `Trashed: ${note.trashed ? 'Yes' : 'No'}`,
+    `Created: ${note.createdAt ? new Date(note.createdAt).toLocaleString() : 'unknown'}`,
+    `Updated: ${note.updatedAt ? new Date(note.updatedAt).toLocaleString() : 'unknown'}`,
+    '',
+    getNoteBody(note),
+    sep,
+  ];
+  return lines.join('\n');
+}
+
+function formatNoteForDoc(note: Note): string {
+  const rawBody = getNoteBody(note);
+  const body = rawBody.replace(/\n/g, '<br/>');
+  return `
+    <div style="margin-bottom:32px; border-bottom:2px solid #ccc; padding-bottom:16px;">
+      <h2 style="font-size:18pt; margin-bottom:4px;">${escapeHtml(note.title || '(untitled)')}</h2>
+      <p><strong>Labels:</strong> ${escapeHtml((note.labels || []).join(', ') || 'none')}</p>
+      <p><strong>Pinned:</strong> ${note.pinned ? 'Yes' : 'No'} &nbsp;
+         <strong>Archived:</strong> ${note.archived ? 'Yes' : 'No'} &nbsp;
+         <strong>Trashed:</strong> ${note.trashed ? 'Yes' : 'No'}</p>
+      <p><strong>Created:</strong> ${note.createdAt ? new Date(note.createdAt).toLocaleString() : 'unknown'}</p>
+      <p><strong>Updated:</strong> ${note.updatedAt ? new Date(note.updatedAt).toLocaleString() : 'unknown'}</p>
+      <div style="margin-top:12px; white-space:pre-wrap;">${body}</div>
+    </div>`;
+}
+
+// ---- Export All Notes ----
+
+export function exportAllNotesAsTxt(notes: Note[]) {
+  const content = notes.map(formatNoteForTxt).join('\n\n');
+  triggerDownload(content, `notes_all_${getTimestamp()}.txt`, 'text/plain');
+}
+
+export function exportAllNotesAsDoc(notes: Note[]) {
+  const body = notes.map(formatNoteForDoc).join('');
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>Notes Export</title></head>
+<body style="font-family:Arial,sans-serif; font-size:12pt;">${body}</body></html>`;
+  triggerDownload(html, `notes_all_${getTimestamp()}.doc`, 'application/msword');
+}
+
+export function exportAllNotesAsJson(notes: Note[]) {
+  const content = JSON.stringify(notes, null, 2);
+  triggerDownload(content, `notes_all_${getTimestamp()}.json`, 'application/json');
+}
+
+// ---- Export Selected Notes ----
+
+export function exportSelectedNotesAsTxt(notes: Note[]) {
+  const content = notes.map(formatNoteForTxt).join('\n\n');
+  triggerDownload(content, `notes_selected_${getTimestamp()}.txt`, 'text/plain');
+}
+
+export function exportSelectedNotesAsDoc(notes: Note[]) {
+  const body = notes.map(formatNoteForDoc).join('');
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>Notes Export</title></head>
+<body style="font-family:Arial,sans-serif; font-size:12pt;">${body}</body></html>`;
+  triggerDownload(html, `notes_selected_${getTimestamp()}.doc`, 'application/msword');
+}
+
+export function exportSelectedNotesAsJson(notes: Note[]) {
+  const content = JSON.stringify(notes, null, 2);
+  triggerDownload(content, `notes_selected_${getTimestamp()}.json`, 'application/json');
+}
+
+// ---- Legacy single-note export (kept for backward compat) ----
+export function exportNoteAsDoc(note: Note) {
+  const body = formatNoteForDoc(note);
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>${escapeHtml(note.title || 'Note')}</title></head>
+<body style="font-family:Arial,sans-serif; font-size:12pt;">${body}</body></html>`;
+  const safeTitle = (note.title || 'Note').replace(/[^a-z0-9]/gi, '_').substring(0, 40);
+  const ts = getTimestamp();
+  triggerDownload(html, `${safeTitle}_${ts}.doc`, 'application/msword');
 }

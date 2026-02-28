@@ -1,17 +1,15 @@
 # Specification
 
 ## Summary
-**Goal:** Add speech-to-text mic input and DOC export functionality to the Notes add/edit flow in MyOrganizer Pro.
+**Goal:** Add TXT, WORD (DOC), and JSON export format options to the Routines export area, and add a Mic (speech-to-text) button inside the Routine Add/Edit form using the browser Web Speech API.
 
 **Planned changes:**
-- Add a Mic button inside the NoteModal component (in the title and body input areas) that uses the browser's Web Speech API (SpeechRecognition / webkitSpeechRecognition) to perform live speech-to-text transcription
-- Transcribed text is inserted/appended at the current cursor position in the active field (title or body) in real time
-- Provide stop/pause and resume controls while recording is active
-- Display an inline message "Speech-to-text not supported on this browser." on unsupported browsers instead of the Mic button
-- No raw audio is stored; only the resulting text is saved via the existing note save flow
-- Add an "Export as Document" option to the existing note actions area (NoteModal or NoteCard context menu) without altering existing controls
-- Export generates a client-side .DOC (Word-compatible HTML) file containing the note title, body (line breaks preserved), labels/tags below the title, and created/updated date-time in the app's standard format
-- Downloaded filename follows the pattern: `NoteTitle_YYYY-MM-DD_HHMM.doc`
-- All new functionality is purely client-side with no server calls
+- Add TXT, WORD (DOC as Word-compatible HTML), and JSON export format options in the existing Routines export area without removing or changing existing export behavior
+- Implement/update `frontend/src/utils/routineExport.ts` with client-side export logic for all three formats, including profile, AM/PM time, title, and any other stored fields per routine item
+- Name exported files as `routines_YYYY-MM-DD_HHMM.(txt|doc|json)` using the current local date/time
+- Add a Mic button inside the Routine Add/Edit form next to the title or notes input, using the browser Web Speech API for speech-to-text
+- Show live interim transcription while recognition is active; append final transcript to the active input field on stop
+- Use or minimally extend the existing `useSpeechRecognition` hook
+- If the browser does not support SpeechRecognition, hide the Mic button and show the inline message "Speech-to-text not supported on this browser." in the Routine Add/Edit form
 
-**User-visible outcome:** Users can dictate notes using their microphone directly inside the note editor, and can export individual notes as .DOC files from the note actions area.
+**User-visible outcome:** Users can export their routines in TXT, WORD, or JSON formats directly from the Routines page, and can dictate text into the routine title or notes field using their microphone when adding or editing a routine.

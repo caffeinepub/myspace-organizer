@@ -2,11 +2,10 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-mic-button-inside-the-notemodal-component-frontend-src-components-notes-notemodal-tsx-in-the-note-body-and-title-input-area-when-tapped-use-the-browser-s-built-in-web-speech-api-speechrecognition-webkitspeechrecognition-to-start-live-speech-to-text-transcription-transcribed-text-must-be-inserted-appended-at-the-current-cursor-position-in-whichever-field-title-or-body-is-active-provide-stop-pause-and-resume-controls-if-speechrecognition-is-not-supported-show-an-inline-message-speech-to-text-not-supported-on-this-browser-do-not-store-any-raw-audio-only-the-resulting-text-is-saved-transcription-must-not-disrupt-normal-keyboard-typing-editing-and-the-note-must-continue-to-save-normally-via-the-existing-save-flow",
-      "featureTitle": "Add a Mic button inside the NoteModal component (frontend/src/components/notes/NoteModal.tsx) in the note body (and title) input area. When tapped, use the browser's built-in Web Speech API (SpeechRecognition / webkitSpeechRecognition) to start live speech-to-text transcription. Transcribed text must be inserted/appended at the current cursor position in whichever field (title or body) is active. Provide stop/pause and resume controls. If SpeechRecognition is not supported, show an inline message: 'Speech-to-text not supported on this browser.' Do not store any raw audio — only the resulting text is saved. Transcription must not disrupt normal keyboard typing/editing, and the note must continue to save normally via the existing save flow.",
+      "featureId": "feature-in-the-routines-import-export-area-wherever-routine-export-currently-exists-in-routinespage-tsx-or-related-components-add-three-export-format-options-txt-word-doc-as-word-compatible-html-and-json-using-the-smallest-possible-ui-addition-e-g-a-format-selector-or-additional-buttons-that-matches-the-existing-design-style-do-not-remove-or-change-any-existing-export-behavior-only-add-these-new-format-options-alongside-what-already-exists",
+      "featureTitle": "In the Routines Import/Export area (wherever routine export currently exists in RoutinesPage.tsx or related components), add three export format options — TXT, WORD (DOC as Word-compatible HTML), and JSON — using the smallest possible UI addition (e.g., a format selector or additional buttons) that matches the existing design style. Do not remove or change any existing export behavior; only add these new format options alongside what already exists.",
       "files": [
-        "frontend/src/components/notes/NoteModal.tsx",
-        "frontend/src/hooks/useSpeechRecognition.ts"
+        "frontend/src/pages/RoutinesPage.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -21,11 +20,10 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-add-a-client-side-export-as-document-option-for-individual-notes-this-must-appear-as-a-minimal-addition-in-the-existing-note-actions-area-e-g-notemodal-or-notecard-context-menu-whichever-already-has-export-action-options-without-changing-any-existing-controls-the-export-must-generate-a-doc-file-word-compatible-html-document-optionally-also-offer-pdf-export-if-it-can-be-done-fully-client-side-without-a-server-or-external-library-that-is-complex-to-integrate-otherwise-skip-pdf-and-only-provide-doc-the-exported-document-must-include-the-note-title-the-note-body-with-line-breaks-preserved-labels-tags-displayed-as-a-small-line-below-the-title-and-the-created-updated-date-time-formatted-using-the-same-format-used-elsewhere-in-the-app-per-frontend-src-utils-dateformatter-ts-e-g-28-feb-2026-3-45-am-the-filename-format-must-be-notetitle-yyyy-mm-dd-hhmm-doc-or-pdf-export-must-work-entirely-client-side-with-no-server-calls",
-      "featureTitle": "Add a client-side 'Export as Document' option for individual notes. This must appear as a minimal addition in the existing note actions area (e.g., NoteModal or NoteCard context menu — whichever already has export/action options) without changing any existing controls. The export must generate a .DOC file (Word-compatible HTML document). Optionally also offer .PDF export if it can be done fully client-side without a server or external library that is complex to integrate; otherwise skip PDF and only provide DOC. The exported document must include: the note title, the note body with line breaks preserved, labels/tags displayed as a small line below the title, and the created/updated date-time formatted using the same format used elsewhere in the app (per frontend/src/utils/dateFormatter.ts, e.g. '28 Feb 2026, 3:45 AM'). The filename format must be: NoteTitle_YYYY-MM-DD_HHMM.doc (or .pdf). Export must work entirely client-side with no server calls.",
+      "featureId": "feature-each-routine-export-txt-word-doc-json-must-include-for-every-routine-item-the-profile-weekdays-weekends-auto-as-applicable-the-time-formatted-in-am-pm-the-title-and-any-other-fields-the-app-already-stores-per-item-description-tag-duration-etc-the-exported-file-must-be-named-routines-yyyy-mm-dd-hhmm-txt-doc-json-using-the-current-local-date-and-time-export-must-be-entirely-client-side-and-work-offline-using-only-browser-apis-no-server-calls-implement-or-update-frontend-src-utils-routineexport-ts-accordingly",
+      "featureTitle": "Each routine export (TXT, WORD/DOC, JSON) must include for every routine item: the Profile (Weekdays / Weekends / Auto as applicable), the time formatted in AM/PM, the title, and any other fields the app already stores per item (description, tag, duration, etc.). The exported file must be named routines_YYYY-MM-DD_HHMM.(txt|doc|json) using the current local date and time. Export must be entirely client-side and work offline, using only browser APIs (no server calls). Implement or update frontend/src/utils/routineExport.ts accordingly.",
       "files": [
-        "frontend/src/components/notes/NoteModal.tsx",
-        "frontend/src/utils/noteExport.ts"
+        "frontend/src/utils/routineExport.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -36,6 +34,42 @@
       ],
       "testIds": [
         "REQ-2"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-inside-the-routine-add-edit-modal-or-form-in-routinespage-tsx-or-the-relevant-add-edit-component-add-a-small-mic-button-next-to-the-routine-title-or-notes-input-field-when-clicked-it-uses-the-browser-web-speech-api-speechrecognition-webkitspeechrecognition-to-start-speech-recognition-shows-live-interim-transcription-and-appends-inserts-the-final-transcribed-text-into-the-active-input-field-title-or-notes-a-second-click-or-a-stop-button-ends-recognition-do-not-store-audio-only-the-resulting-text-string-this-addition-must-not-interfere-with-manual-typing-or-the-save-submit-flow-use-the-existing-usespeechrecognition-hook-frontend-src-hooks-usespeechrecognition-ts-if-it-is-compatible-or-extend-it-minimally",
+      "featureTitle": "Inside the Routine Add/Edit modal or form (in RoutinesPage.tsx or the relevant add/edit component), add a small Mic button next to the routine title or notes input field. When clicked, it uses the browser Web Speech API (SpeechRecognition / webkitSpeechRecognition) to start speech recognition, shows live interim transcription, and appends/inserts the final transcribed text into the active input field (title or notes). A second click (or a Stop button) ends recognition. Do not store audio — only the resulting text string. This addition must not interfere with manual typing or the save/submit flow. Use the existing useSpeechRecognition hook (frontend/src/hooks/useSpeechRecognition.ts) if it is compatible, or extend it minimally.",
+      "files": [
+        "frontend/src/pages/RoutinesPage.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-3"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-if-the-browser-does-not-support-speechrecognition-or-webkitspeechrecognition-display-a-small-inline-message-reading-speech-to-text-not-supported-on-this-browser-in-place-of-or-next-to-the-mic-button-inside-the-routine-add-edit-form-no-mic-button-should-appear-in-this-case",
+      "featureTitle": "If the browser does not support SpeechRecognition or webkitSpeechRecognition, display a small inline message reading 'Speech-to-text not supported on this browser.' in place of or next to the Mic button inside the Routine Add/Edit form. No Mic button should appear in this case.",
+      "files": [
+        "frontend/src/pages/RoutinesPage.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0"
+      ],
+      "testIds": [
+        "REQ-4"
       ],
       "confidence": "high"
     }

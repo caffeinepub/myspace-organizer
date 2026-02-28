@@ -1,13 +1,31 @@
-import React, { useState } from 'react';
-import { Plus, GripVertical, Check, Pencil, Trash2, Clock } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Plus, GripVertical, Check, Pencil, Trash2, Clock, Download, Upload, Mic, MicOff, FileText, FileDown, Braces } from 'lucide-react';
 import { useRoutines, getTodayProfile, type ProfileType } from '../hooks/useRoutines';
 import { Modal } from '../components/common/Modal';
-import type { RoutineItem } from '../db/schema';
+import type { RoutineItem, RoutineProfile } from '../db/schema';
 import { format, parse } from 'date-fns';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { showErrorToast } from '../store/toastStore';
+import { showErrorToast, showSuccessToast } from '../store/toastStore';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import {
+  exportAllRoutinesAsTxt,
+  exportAllRoutinesAsDoc,
+  exportAllRoutinesAsJson,
+  exportSelectedRoutinesAsTxt,
+  exportSelectedRoutinesAsDoc,
+  exportSelectedRoutinesAsJson,
+} from '../utils/routineExport';
+import { importRoutinesFromFile } from '../utils/routineImport';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 
 const TABS = [
   { id: 'today', label: 'Today (Auto)' },
@@ -28,7 +46,7 @@ function formatTime(time: string): string {
 }
 
 export function RoutinesPage() {
-  const { weekday, weekend, loading, addItem, updateItem, deleteItem, toggleComplete, reorderItems } = useRoutines();
+  const { weekday, weekend, loading, addItem, updateItem, deleteItem, toggleComplete, reorderItems, reload } = useRoutines();
   const [activeTab, setActiveTab] = useState<TabId>('today');
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<RoutineItem | null>(null);
@@ -41,10 +59,46 @@ export function RoutinesPage() {
   const [formIcon, setFormIcon] = useState('⭐');
   const [formDuration, setFormDuration] = useState('');
 
+  // Import state
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
+
+  // Speech recognition
+  const {
+    isSupported: speechSupported,
+    isListening,
+    transcript,
+    interimTranscript,
+    startListening,
+    stopListening,
+    resetTranscript,
+  } = useSpeechRecognition();
+
+  // Append finalized transcript to title field
+  useEffect(() => {
+    if (transcript) {
+      setFormTitle(prev => {
+        const separator = prev && !prev.endsWith(' ') ? ' ' : '';
+        return prev + separator + transcript;
+      });
+      resetTranscript();
+    }
+  }, [transcript, resetTranscript]);
+
+  // Stop listening when form closes
+  useEffect(() => {
+    if (!showForm && isListening) {
+      stopListening();
+    }
+  }, [showForm, isListening, stopListening]);
+
   const todayType = getTodayProfile();
   const activeProfileType: ProfileType = activeTab === 'today' ? todayType : (activeTab as ProfileType);
   const profile = activeProfileType === 'weekday' ? weekday : weekend;
   const items = profile?.items.slice().sort((a, b) => a.order - b.order) || [];
+
+  // Filter out nulls to get a properly typed RoutineProfile[]
+  const allProfiles: RoutineProfile[] = [weekday, weekend].filter((p): p is RoutineProfile => p !== null);
 
   const openAdd = () => {
     setEditingItem(null);
@@ -53,6 +107,7 @@ export function RoutinesPage() {
     setFormTag('');
     setFormIcon('⭐');
     setFormDuration('');
+    resetTranscript();
     setShowForm(true);
   };
 
@@ -63,10 +118,12 @@ export function RoutinesPage() {
     setFormTag(item.tag || '');
     setFormIcon(item.icon || '⭐');
     setFormDuration(item.duration?.toString() || '');
+    resetTranscript();
     setShowForm(true);
   };
 
   const handleSave = async () => {
+    if (isListening) stopListening();
     if (!formTitle.trim()) { showErrorToast('Title is required'); return; }
     if (editingItem) {
       await updateItem(activeProfileType, {
@@ -111,19 +168,111 @@ export function RoutinesPage() {
   };
   const handleDragEnd = () => setDragIndex(null);
 
+  const handleImportClick = () => {
+    importInputRef.current?.click();
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsImporting(true);
+    try {
+      const result = await importRoutinesFromFile(file, allProfiles);
+      if (result.error) {
+        showErrorToast(result.error);
+      } else {
+        showSuccessToast(`Imported ${result.count} routine item(s)`);
+        await reload();
+      }
+    } catch {
+      showErrorToast('Import failed');
+    } finally {
+      setIsImporting(false);
+      if (importInputRef.current) importInputRef.current.value = '';
+    }
+  };
+
+  const handleToggleMic = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
   if (loading) return <LoadingSpinner />;
 
   return (
     <div className="p-4 max-w-lg mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">Routines</h1>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
-          aria-label="Add routine item"
-        >
-          <Plus className="w-4 h-4" /> Add
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Import */}
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json,.txt,.doc,.docx"
+            className="hidden"
+            onChange={handleImportFile}
+            aria-label="Import routines file"
+          />
+          <button
+            onClick={handleImportClick}
+            disabled={isImporting}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors text-muted-foreground disabled:opacity-50"
+            aria-label="Import routines"
+            title="Import routines"
+          >
+            <Upload className="w-4 h-4" />
+            <span className="hidden sm:inline">Import</span>
+          </button>
+
+          {/* Export dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors text-muted-foreground"
+                aria-label="Export routines"
+                title="Export routines"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Export</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Export All Profiles</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => exportAllRoutinesAsTxt(allProfiles)} className="gap-2 text-sm">
+                <FileText className="w-4 h-4" /> TXT
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportAllRoutinesAsDoc(allProfiles)} className="gap-2 text-sm">
+                <FileDown className="w-4 h-4" /> WORD (DOC)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => exportAllRoutinesAsJson(allProfiles)} className="gap-2 text-sm">
+                <Braces className="w-4 h-4" /> JSON
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Export Active Profile</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => profile && exportSelectedRoutinesAsTxt([profile])} disabled={!profile} className="gap-2 text-sm">
+                <FileText className="w-4 h-4" /> TXT
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => profile && exportSelectedRoutinesAsDoc([profile])} disabled={!profile} className="gap-2 text-sm">
+                <FileDown className="w-4 h-4" /> WORD (DOC)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => profile && exportSelectedRoutinesAsJson([profile])} disabled={!profile} className="gap-2 text-sm">
+                <Braces className="w-4 h-4" /> JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Add button */}
+          <button
+            onClick={openAdd}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            aria-label="Add routine item"
+          >
+            <Plus className="w-4 h-4" /> Add
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -209,7 +358,7 @@ export function RoutinesPage() {
         </div>
       )}
 
-      {/* Form Modal */}
+      {/* Add/Edit Form Modal */}
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={editingItem ? 'Edit Routine Item' : 'Add Routine Item'} size="md">
         <div className="space-y-4">
           <div>
@@ -218,7 +367,38 @@ export function RoutinesPage() {
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Title *</label>
-            <Input value={formTitle} onChange={e => setFormTitle(e.target.value)} placeholder="e.g. Morning Workout" aria-label="Title" />
+            <div className="flex items-center gap-2">
+              <Input
+                value={formTitle}
+                onChange={e => setFormTitle(e.target.value)}
+                placeholder="e.g. Morning Workout"
+                aria-label="Title"
+                className="flex-1"
+              />
+              {speechSupported ? (
+                <button
+                  type="button"
+                  onClick={handleToggleMic}
+                  className={`shrink-0 p-2 rounded-lg border transition-colors ${
+                    isListening
+                      ? 'bg-destructive/10 border-destructive text-destructive hover:bg-destructive/20'
+                      : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                  }`}
+                  aria-label={isListening ? 'Stop speech recognition' : 'Start speech recognition'}
+                  title={isListening ? 'Stop dictation' : 'Dictate title'}
+                >
+                  {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+              ) : (
+                <span className="text-xs text-muted-foreground shrink-0">Speech-to-text not supported on this browser.</span>
+              )}
+            </div>
+            {/* Live interim transcription */}
+            {isListening && (
+              <p className="mt-1.5 text-xs text-muted-foreground italic min-h-[1.25rem]">
+                {interimTranscript ? `"${interimTranscript}"` : 'Listening…'}
+              </p>
+            )}
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tag (optional)</label>

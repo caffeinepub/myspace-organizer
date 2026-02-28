@@ -1,76 +1,107 @@
 {
   "kind": "build_request",
-  "title": "Add Speech-to-Text Mic Input and DOC Export to Notes",
+  "title": "Add Routines Export Formats (TXT/WORD/JSON) and Mic Speech-to-Text in Routine Add/Edit",
   "projectName": "MyOrganizer Pro",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Add a Mic button inside the NoteModal component (frontend/src/components/notes/NoteModal.tsx) in the note body (and title) input area. When tapped, use the browser's built-in Web Speech API (SpeechRecognition / webkitSpeechRecognition) to start live speech-to-text transcription. Transcribed text must be inserted/appended at the current cursor position in whichever field (title or body) is active. Provide stop/pause and resume controls. If SpeechRecognition is not supported, show an inline message: 'Speech-to-text not supported on this browser.' Do not store any raw audio — only the resulting text is saved. Transcription must not disrupt normal keyboard typing/editing, and the note must continue to save normally via the existing save flow.",
+      "text": "In the Routines Import/Export area (wherever routine export currently exists in RoutinesPage.tsx or related components), add three export format options — TXT, WORD (DOC as Word-compatible HTML), and JSON — using the smallest possible UI addition (e.g., a format selector or additional buttons) that matches the existing design style. Do not remove or change any existing export behavior; only add these new format options alongside what already exists.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-3"
         ],
         "quotes": [
-          "Add a 'Mic' (audio input) option ONLY inside the Notes add/edit flow (where the note text is entered).",
-          "Start speech-to-text using the browser's built-in Web Speech API (SpeechRecognition / webkitSpeechRecognition).",
-          "Transcribe speech live and insert/append into the note body (and/or title if cursor is there).",
-          "Allow stop/pause and resume.",
-          "If SpeechRecognition is not supported, show a simple inline message: 'Speech-to-text not supported on this browser.'",
-          "Do NOT store raw audio. Only store the resulting text in the note."
+          "add export format options: TXT, WORD (DOC or DOCX; if DOCX is not feasible client-side, use DOC as Word-compatible HTML), JSON",
+          "Do not remove or change existing export behavior; only add these formats/options."
         ]
       },
       "acceptanceCriteria": [
-        "A Mic button appears in the note body/title area of the NoteModal without altering any other existing UI elements.",
-        "Tapping Mic starts live transcription using SpeechRecognition / webkitSpeechRecognition.",
-        "Transcribed text is appended/inserted into the active input field (title or body) in real time.",
-        "Stop/pause and resume controls are available while recording.",
-        "On browsers without SpeechRecognition support, the inline message 'Speech-to-text not supported on this browser.' is displayed instead of the Mic button or on tap.",
-        "No raw audio is persisted; only text is stored via the existing note save mechanism.",
-        "Normal keyboard typing still works during and after transcription, and the note saves successfully."
+        "TXT, WORD (DOC), and JSON export options are visible in the existing Routines export area.",
+        "Existing export behavior is unchanged; new formats are additive only.",
+        "The UI addition is minimal and matches the current design style."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Add a client-side 'Export as Document' option for individual notes. This must appear as a minimal addition in the existing note actions area (e.g., NoteModal or NoteCard context menu — whichever already has export/action options) without changing any existing controls. The export must generate a .DOC file (Word-compatible HTML document). Optionally also offer .PDF export if it can be done fully client-side without a server or external library that is complex to integrate; otherwise skip PDF and only provide DOC. The exported document must include: the note title, the note body with line breaks preserved, labels/tags displayed as a small line below the title, and the created/updated date-time formatted using the same format used elsewhere in the app (per frontend/src/utils/dateFormatter.ts, e.g. '28 Feb 2026, 3:45 AM'). The filename format must be: NoteTitle_YYYY-MM-DD_HHMM.doc (or .pdf). Export must work entirely client-side with no server calls.",
+      "text": "Each routine export (TXT, WORD/DOC, JSON) must include for every routine item: the Profile (Weekdays / Weekends / Auto as applicable), the time formatted in AM/PM, the title, and any other fields the app already stores per item (description, tag, duration, etc.). The exported file must be named routines_YYYY-MM-DD_HHMM.(txt|doc|json) using the current local date and time. Export must be entirely client-side and work offline, using only browser APIs (no server calls). Implement or update frontend/src/utils/routineExport.ts accordingly.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-3"
         ],
         "quotes": [
-          "In the existing Export area or within Notes actions (use whichever is already present), add: A) Export selected note as .DOC (Word-compatible HTML doc) OR .DOCX if available B) Export selected note as .PDF (optional if easy; if not, skip PDF and keep DOC)",
-          "Export must include: Note title, Note body (preserve line breaks), Labels/tags (as a small line under title), Created/Updated date-time (use the same date+time format used elsewhere in the app)",
-          "File name format: NoteTitle_YYYY-MM-DD_HHMM.doc (or docx/pdf)",
-          "Export must work fully client-side (no server)."
+          "Export must include for each routine item: Profile (Weekdays/Weekends/Auto if applicable), Time in AM/PM, Title (and any description/tag/duration if the app already has them)",
+          "File naming: routines_YYYY-MM-DD_HHMM.(txt/doc/json)",
+          "Export must be client-side only and work offline."
         ]
       },
       "acceptanceCriteria": [
-        "An 'Export as Document' option is added to the existing note actions area (NoteModal or NoteCard context menu) without removing or relocating any existing controls.",
-        "Clicking the option triggers a client-side download of a .DOC (HTML-based Word-compatible) file.",
-        "The exported file contains: note title, note body with line breaks preserved, labels/tags on a small line beneath the title, and created/updated date-time in the app's standard format.",
-        "The downloaded filename follows the pattern NoteTitle_YYYY-MM-DD_HHMM.doc.",
-        "No server request is made during export; the file is generated and downloaded entirely in the browser.",
-        "Existing export functionality (if any) is unaffected."
+        "Exported TXT file contains profile, AM/PM time, title, and any other stored fields for each item.",
+        "Exported DOC file (Word-compatible HTML) contains the same fields and opens in Word.",
+        "Exported JSON file contains the same fields in structured JSON.",
+        "Downloaded file is named routines_YYYY-MM-DD_HHMM with the appropriate extension.",
+        "Export works fully offline without any network requests."
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "text": "Inside the Routine Add/Edit modal or form (in RoutinesPage.tsx or the relevant add/edit component), add a small Mic button next to the routine title or notes input field. When clicked, it uses the browser Web Speech API (SpeechRecognition / webkitSpeechRecognition) to start speech recognition, shows live interim transcription, and appends/inserts the final transcribed text into the active input field (title or notes). A second click (or a Stop button) ends recognition. Do not store audio — only the resulting text string. This addition must not interfere with manual typing or the save/submit flow. Use the existing useSpeechRecognition hook (frontend/src/hooks/useSpeechRecognition.ts) if it is compatible, or extend it minimally.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-3"
+        ],
+        "quotes": [
+          "Add a Mic (speech-to-text) option ONLY inside the Routine Add/Edit flow in the Routines tab/section.",
+          "Use browser Web Speech API (SpeechRecognition / webkitSpeechRecognition): Start/stop, Live transcription, Insert/append transcribed text into the routine title/notes field being edited",
+          "Do NOT store audio, only the resulting text.",
+          "Must not break manual typing or saving."
+        ]
+      },
+      "acceptanceCriteria": [
+        "A Mic button appears only inside the Routine Add/Edit form, next to the title or notes input.",
+        "Clicking the Mic button starts speech recognition; live interim results are shown.",
+        "Clicking Stop (or the Mic button again) ends recognition and appends the final transcript to the input field.",
+        "Manual typing continues to work normally before, during, and after recognition.",
+        "The save/submit flow is unaffected.",
+        "No audio data is stored; only the text transcript is inserted into the field."
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "text": "If the browser does not support SpeechRecognition or webkitSpeechRecognition, display a small inline message reading 'Speech-to-text not supported on this browser.' in place of or next to the Mic button inside the Routine Add/Edit form. No Mic button should appear in this case.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-3"
+        ],
+        "quotes": [
+          "If not supported, show a small inline message: 'Speech-to-text not supported on this browser.'"
+        ]
+      },
+      "acceptanceCriteria": [
+        "On browsers without SpeechRecognition support, the Mic button is not rendered.",
+        "Instead, the message 'Speech-to-text not supported on this browser.' is shown inline in the Routine Add/Edit form.",
+        "The rest of the form functions normally on unsupported browsers."
       ]
     }
   ],
   "constraints": [
-    "Do NOT change any existing UI layout, styling, feature behavior, or component structure outside of the two new additions.",
-    "Do NOT alter existing data structures in the DB schema unless strictly required; any such change must be fully backward-compatible.",
-    "Do NOT modify any file listed in frontend.immutablePaths.",
-    "Mic button and Export as Document option must visually match the current design system (same colors, typography, spacing).",
-    "No raw audio may be stored anywhere.",
-    "All new functionality must be purely client-side with no backend or server calls."
+    "Do not modify any UI layout, styling, feature behavior, or naming outside the described additions.",
+    "Do not remove or alter any existing export functionality for routines or notes.",
+    "Speech-to-text must only appear inside the Routine Add/Edit flow — not on any other page or component.",
+    "All export logic must be client-side only; no backend changes required.",
+    "Do not edit files listed in frontend.immutablePaths."
   ],
   "nonGoals": [
-    "PDF export is optional; do not implement it if it requires a non-trivial external library or server-side processing.",
-    "No changes to the backend (main.mo) are required.",
-    "No changes to routing, navigation, or any page other than Notes-related components.",
-    "No new labels, data fields, or DB tables unless strictly required for backward-compatible note text storage.",
-    "No changes to existing export features (e.g., JSON export in RecordsPage or SettingsPage).",
-    "No real-time collaboration, cloud sync, or server-side transcription."
+    "Adding export format options to Notes or Records pages.",
+    "Adding speech-to-text to any form outside of Routine Add/Edit.",
+    "Storing or uploading audio recordings.",
+    "Changing the visual design, color scheme, typography, or layout of any existing component.",
+    "Adding DOCX export (use DOC as Word-compatible HTML instead).",
+    "Any backend changes."
   ],
   "imageRequirements": {
     "required": [],

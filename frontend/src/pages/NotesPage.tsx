@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { Search, Archive, Trash2, Tag, X } from 'lucide-react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { Search, Archive, Trash2, Tag, X, Download, Upload, FileText, FileJson, FileType } from 'lucide-react';
 import { useNotes } from '../hooks/useNotes';
 import { useLabels } from '../hooks/useLabels';
 import { NoteCard } from '../components/notes/NoteCard';
@@ -10,6 +10,21 @@ import { LabelManager } from '../components/notes/LabelManager';
 import type { Note } from '../db/schema';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { db } from '../db/db';
+import {
+  exportAllNotesAsTxt,
+  exportAllNotesAsDoc,
+  exportAllNotesAsJson,
+} from '../utils/noteExport';
+import { importNotesFromFile } from '../utils/noteImport';
+import { showSuccessToast, showErrorToast } from '../store/toastStore';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
 
 interface NotesPageProps {
   initialQuickAdd?: boolean;
@@ -18,14 +33,16 @@ interface NotesPageProps {
 
 export function NotesPage({ initialQuickAdd, onQuickAddHandled }: NotesPageProps) {
   const {
-    notes, loading, search, setSearch, labelFilter, setLabelFilter,
+    notes, allNotes, loading, search, setSearch, labelFilter, setLabelFilter,
     view, setView, selectedIds, toggleSelect, clearSelection,
     createNote, updateNote, trashNote, archiveNote, togglePin, bulkAction, restoreNote, deleteNote,
+    reload,
   } = useNotes();
   const { labels, reload: reloadLabels } = useLabels();
 
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [showLabelManager, setShowLabelManager] = useState(false);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   // Handle quick add triggered from home page
   useEffect(() => {
@@ -71,11 +88,6 @@ export function NotesPage({ initialQuickAdd, onQuickAddHandled }: NotesPageProps
     setSelectedNote(null);
   }, [updateNote]);
 
-  /**
-   * Called by LabelManager after a label is added, renamed, or deleted.
-   * Reloads the labels list from IndexedDB immediately and, if a rename occurred
-   * and the renamed label was the active filter, updates the filter to the new name.
-   */
   const handleLabelsChanged = useCallback(
     (change?: { type: 'rename'; oldName: string; newName: string }) => {
       reloadLabels();
@@ -86,15 +98,48 @@ export function NotesPage({ initialQuickAdd, onQuickAddHandled }: NotesPageProps
     [reloadLabels, labelFilter, setLabelFilter]
   );
 
+  // ---- Export All ----
+  const handleExportAll = useCallback((format: 'txt' | 'doc' | 'json') => {
+    try {
+      if (format === 'txt') exportAllNotesAsTxt(allNotes);
+      else if (format === 'doc') exportAllNotesAsDoc(allNotes);
+      else exportAllNotesAsJson(allNotes);
+      showSuccessToast(`Exported ${allNotes.length} note(s) as ${format.toUpperCase()}`);
+    } catch {
+      showErrorToast('Export failed. Please try again.');
+    }
+  }, [allNotes]);
+
+  // ---- Import ----
+  const handleImportClick = useCallback(() => {
+    importInputRef.current?.click();
+  }, []);
+
+  const handleImportFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset input so same file can be re-imported
+    e.target.value = '';
+    const result = await importNotesFromFile(file, allNotes);
+    if (result.error) {
+      showErrorToast(`Import failed: ${result.error}`);
+    } else {
+      showSuccessToast(`Imported ${result.count} note(s) successfully`);
+      reload();
+    }
+  }, [allNotes, reload]);
+
   if (loading) return <LoadingSpinner />;
 
   const isMultiSelect = selectedIds.size > 0;
+  const selectedNotes = allNotes.filter(n => n.id !== undefined && selectedIds.has(n.id as number));
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
       {isMultiSelect && (
         <MultiSelectToolbar
           count={selectedIds.size}
+          selectedNotes={selectedNotes}
           onArchive={() => bulkAction('archive', Array.from(selectedIds))}
           onTrash={() => bulkAction('trash', Array.from(selectedIds))}
           onDelete={() => bulkAction('delete', Array.from(selectedIds))}
@@ -104,13 +149,59 @@ export function NotesPage({ initialQuickAdd, onQuickAddHandled }: NotesPageProps
 
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">Notes</h1>
-        <button
-          onClick={() => setShowLabelManager(true)}
-          className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
-          aria-label="Manage labels"
-        >
-          <Tag className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          {/* Import */}
+          <button
+            onClick={handleImportClick}
+            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+            aria-label="Import notes"
+            title="Import Notes"
+          >
+            <Upload className="w-4 h-4" />
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json,.txt,.doc,.docx"
+            className="hidden"
+            onChange={handleImportFile}
+          />
+
+          {/* Export All */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+                aria-label="Export all notes"
+                title="Export All Notes"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Export All Notes</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleExportAll('txt')}>
+                <FileText className="w-4 h-4 mr-2" /> Export as TXT
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportAll('doc')}>
+                <FileType className="w-4 h-4 mr-2" /> Export as WORD (DOC)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExportAll('json')}>
+                <FileJson className="w-4 h-4 mr-2" /> Export as JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Label manager */}
+          <button
+            onClick={() => setShowLabelManager(true)}
+            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+            aria-label="Manage labels"
+          >
+            <Tag className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* View tabs */}

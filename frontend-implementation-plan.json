@@ -1,59 +1,79 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add Speech-to-Text Mic Input and DOC Export to Notes",
+  "title": "Add Routines Export Formats (TXT/WORD/JSON) and Mic Speech-to-Text in Routine Add/Edit",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add speech-to-text mic button in NoteModal using Web Speech API with live transcription, stop/pause/resume controls, and browser compatibility fallback",
+      "summary": "Add TXT, WORD (DOC), and JSON export format options to the existing Routines export area in RoutinesPage.tsx, preserving all existing export behavior",
       "acceptanceCriteria": [
-        "A Mic button appears in the note body/title area of the NoteModal without altering any other existing UI elements.",
-        "Tapping Mic starts live transcription using SpeechRecognition / webkitSpeechRecognition.",
-        "Transcribed text is appended/inserted into the active input field (title or body) in real time.",
-        "Stop/pause and resume controls are available while recording.",
-        "On browsers without SpeechRecognition support, the inline message 'Speech-to-text not supported on this browser.' is displayed instead of the Mic button or on tap.",
-        "No raw audio is persisted; only text is stored via the existing note save mechanism.",
-        "Normal keyboard typing still works during and after transcription, and the note saves successfully."
+        "TXT, WORD (DOC), and JSON export options are visible in the existing Routines export area.",
+        "Existing export behavior is unchanged; new formats are additive only.",
+        "The UI addition is minimal and matches the current design style."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/hooks/useSpeechRecognition.ts",
-          "operation": "create",
-          "description": "Create a custom React hook that wraps the Web Speech API (SpeechRecognition / webkitSpeechRecognition). The hook must expose: isSupported (boolean), isListening (boolean), transcript (string), error (string | null), startListening, stopListening, and resetTranscript functions. Handle browser compatibility by checking for window.SpeechRecognition or window.webkitSpeechRecognition. Implement continuous recognition with interim results. Return null or appropriate defaults when the API is unavailable."
-        },
-        {
-          "path": "frontend/src/components/notes/NoteModal.tsx",
+          "path": "frontend/src/pages/RoutinesPage.tsx",
           "operation": "modify",
-          "description": "Add a Mic button adjacent to both the title input and body textarea within the NoteModal. Use the useSpeechRecognition hook to manage speech-to-text state. When the Mic button is tapped, call startListening and insert transcribed text at the current cursor position in the active field (title or body). Display stop/pause and resume controls while recording. Show the inline message 'Speech-to-text not supported on this browser.' if isSupported is false. Ensure the Mic button styling matches the existing design system (colors, typography, spacing). Preserve existing keyboard input behavior and note save flow. Do not store any audio data; only persist the resulting text via the existing save mechanism."
+          "description": "Add three new export format options (TXT, WORD/DOC, JSON) to the existing Routines export UI area. Use a minimal UI addition such as a format selector dropdown or additional buttons that match the existing design style. Wire the new export options to call the corresponding export functions from frontend/src/utils/routineExport.ts. Do not remove or alter any existing export functionality."
         }
       ]
     },
     {
       "id": "REQ-2",
-      "summary": "Add client-side 'Export as Document' option to note actions that generates a .DOC file (Word-compatible HTML) with title, body, labels, and formatted date-time",
+      "summary": "Implement client-side export logic for routines in TXT, WORD (DOC as Word-compatible HTML), and JSON formats with complete profile and item data, using timestamped filenames",
       "acceptanceCriteria": [
-        "An 'Export as Document' option is added to the existing note actions area (NoteModal or NoteCard context menu) without removing or relocating any existing controls.",
-        "Clicking the option triggers a client-side download of a .DOC (HTML-based Word-compatible) file.",
-        "The exported file contains: note title, note body with line breaks preserved, labels/tags on a small line beneath the title, and created/updated date-time in the app's standard format.",
-        "The downloaded filename follows the pattern NoteTitle_YYYY-MM-DD_HHMM.doc.",
-        "No server request is made during export; the file is generated and downloaded entirely in the browser.",
-        "Existing export functionality (if any) is unaffected."
+        "Exported TXT file contains profile, AM/PM time, title, and any other stored fields for each item.",
+        "Exported DOC file (Word-compatible HTML) contains the same fields and opens in Word.",
+        "Exported JSON file contains the same fields in structured JSON.",
+        "Downloaded file is named routines_YYYY-MM-DD_HHMM with the appropriate extension.",
+        "Export works fully offline without any network requests."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/noteExport.ts",
-          "operation": "create",
-          "description": "Create a utility function exportNoteAsDoc that accepts a note object (with title, body, labels array, createdAt, and updatedAt). Generate a Word-compatible HTML document structure containing: the note title as a heading, labels/tags displayed as a small line below the title, the note body with line breaks converted to <br> or <p> tags, and the created/updated date-time formatted using the dateFormatter utility (e.g., '28 Feb 2026, 3:45 AM'). Create a Blob with MIME type 'application/msword' and trigger a download with filename format NoteTitle_YYYY-MM-DD_HHMM.doc (sanitize the title to remove invalid filename characters). All processing must be client-side with no server calls."
+          "path": "frontend/src/utils/routineExport.ts",
+          "operation": "modify",
+          "description": "Extend or update the existing export functions to support TXT, WORD (DOC as Word-compatible HTML), and JSON formats. Each export must include for every routine item: Profile (Weekdays/Weekends/Auto), time in AM/PM format, title, and all other stored fields (description, tag, duration, etc.). Generate filenames using the pattern routines_YYYY-MM-DD_HHMM.(txt|doc|json) with the current local date and time. Ensure all export logic is entirely client-side using only browser APIs (no server calls) and works offline."
+        }
+      ]
+    },
+    {
+      "id": "REQ-3",
+      "summary": "Add a Mic button for speech-to-text using the Web Speech API inside the Routine Add/Edit form, showing live transcription and inserting the final text into the active input field",
+      "acceptanceCriteria": [
+        "A Mic button appears only inside the Routine Add/Edit form, next to the title or notes input.",
+        "Clicking the Mic button starts speech recognition; live interim results are shown.",
+        "Clicking Stop (or the Mic button again) ends recognition and appends the final transcript to the input field.",
+        "Manual typing continues to work normally before, during, and after recognition.",
+        "The save/submit flow is unaffected.",
+        "No audio data is stored; only the text transcript is inserted into the field."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/pages/RoutinesPage.tsx",
+          "operation": "modify",
+          "description": "Add a small Mic button next to the routine title or notes input field inside the Routine Add/Edit modal or form. When clicked, use the existing useSpeechRecognition hook (frontend/src/hooks/useSpeechRecognition.ts) to start speech recognition, display live interim transcription inline, and append/insert the final transcribed text into the active input field. A second click (or a Stop button) ends recognition. Ensure this addition does not interfere with manual typing or the save/submit flow. Do not store audio; only insert the resulting text string into the input field. Verify the useSpeechRecognition hook's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/components/notes/NoteModal.tsx",
+          "path": "frontend/src/hooks/useSpeechRecognition.ts",
           "operation": "modify",
-          "description": "Add an 'Export as Document' button or menu item to the existing note actions area within the NoteModal. The control must be placed alongside any existing action buttons without removing or relocating them. When clicked, call the exportNoteAsDoc utility function from frontend/src/utils/noteExport.ts, passing the current note data. Ensure the button styling matches the existing design system (colors, typography, spacing). The export must work entirely client-side with no backend calls."
-        },
+          "description": "Review and extend the existing useSpeechRecognition hook if necessary to ensure it supports start/stop controls, exposes live interim transcription state, and provides the final transcript result. Ensure the hook uses the browser Web Speech API (SpeechRecognition or webkitSpeechRecognition) and handles errors gracefully."
+        }
+      ]
+    },
+    {
+      "id": "REQ-4",
+      "summary": "Display a fallback message 'Speech-to-text not supported on this browser.' inside the Routine Add/Edit form when SpeechRecognition is unavailable, hiding the Mic button",
+      "acceptanceCriteria": [
+        "On browsers without SpeechRecognition support, the Mic button is not rendered.",
+        "Instead, the message 'Speech-to-text not supported on this browser.' is shown inline in the Routine Add/Edit form.",
+        "The rest of the form functions normally on unsupported browsers."
+      ],
+      "file_operations": [
         {
-          "path": "frontend/src/components/notes/NoteCard.tsx",
+          "path": "frontend/src/pages/RoutinesPage.tsx",
           "operation": "modify",
-          "description": "Add an 'Export as Document' option to the existing context menu in NoteCard if it already has export or action options. When selected, call the exportNoteAsDoc utility function from frontend/src/utils/noteExport.ts, passing the note data. Ensure the menu item styling matches the existing design system. The export must work entirely client-side with no backend calls. If no context menu exists, skip this operation and rely solely on the NoteModal implementation."
+          "description": "Add a browser capability check for SpeechRecognition (window.SpeechRecognition or window.webkitSpeechRecognition) inside the Routine Add/Edit form. If the API is not supported, hide the Mic button and display a small inline message reading 'Speech-to-text not supported on this browser.' in its place. Ensure the rest of the form functions normally on unsupported browsers."
         }
       ]
     }
