@@ -3,6 +3,7 @@ import { db } from '../db/db';
 import type { RoutineProfile, RoutineItem } from '../db/schema';
 import { showSuccessToast, showErrorToast } from '../store/toastStore';
 import { getDay } from 'date-fns';
+import { deleteRoutineImage } from './useRoutineImages';
 
 export type ProfileType = 'weekday' | 'weekend';
 
@@ -70,6 +71,11 @@ export function useRoutines() {
     const profile = profileType === 'weekday' ? weekday : weekend;
     if (!profile) return;
     try {
+      // Clean up any attached image for this item
+      const item = profile.items.find(i => i.id === itemId);
+      if (item?.imageId) {
+        deleteRoutineImage(item.imageId);
+      }
       const updated = { ...profile, items: profile.items.filter(i => i.id !== itemId) };
       await db.routines.put(updated);
       if (profileType === 'weekday') setWeekday(updated);

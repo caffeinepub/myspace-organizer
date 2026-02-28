@@ -427,7 +427,14 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
               <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                 <ImageIcon className="w-8 h-8 text-muted-foreground mb-2" />
                 <span className="text-sm text-muted-foreground">Tap to add image</span>
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} aria-label="Upload image" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={handleImageUpload}
+                  aria-label="Upload image"
+                />
               </label>
             )}
             <textarea
@@ -452,12 +459,12 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
           />
         </div>
 
-        {/* Labels display */}
+        {/* Selected labels display */}
         {selectedLabels.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
-            {selectedLabels.map(label => (
-              <span key={label} className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
-                {label}
+            {selectedLabels.map(l => (
+              <span key={l} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                {l}
               </span>
             ))}
           </div>

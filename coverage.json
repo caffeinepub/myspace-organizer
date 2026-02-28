@@ -1,50 +1,32 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T01:14:15.839Z",
+  "generatedAt": "2026-02-28T19:52:42.895Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 3,
-    "implemented": 3,
+    "total": 1,
+    "implemented": 1,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "In the Records section (RecordsPage.tsx and useRecords.ts), add three client-side export format options — TXT, WORD (DOC as Word-compatible HTML), and JSON — strictly alongside any existing export without modifying it. Each exported file must include all existing record fields exactly as stored, with date+time formatted as '28 Feb 2026, 3:45 AM' (using the existing dateFormatter utility). Filenames must follow the pattern: records_YYYY-MM-DD_HHMM.txt / .doc / .json. Export must be entirely client-side and offline. Implement export logic in a new utility file (e.g., frontend/src/utils/recordExport.ts) with new function names only, modeled after the existing noteExport.ts and routineExport.ts patterns.",
+        "summary": "In the Routines page (RoutinesPage.tsx), add an image attachment feature to routine items. Each routine item should support attaching an image via two input options: (1) gallery/file upload (accept=\"image/*\") and (2) camera capture (accept=\"image/*\" capture=\"environment\"). Display a thumbnail preview of the attached image on the routine item card. Store the image using the existing useImageStorage hook (IndexedDB imageBlobs table). Do not modify any existing routine item fields, drag-to-reorder, add/edit/delete, speech recognition, import/export, or tab-switching functionality.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/utils/recordExport.ts",
-          "frontend/src/pages/RecordsPage.tsx"
+          "frontend/src/db/schema.ts",
+          "frontend/src/pages/RoutinesPage.tsx",
+          "frontend/src/hooks/useRoutines.ts",
+          "frontend/src/utils/routineExport.ts",
+          "frontend/src/utils/routineImport.ts"
         ],
         "matchedFiles": [
-          "frontend/src/utils/recordExport.ts",
-          "frontend/src/pages/RecordsPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-2",
-        "summary": "In the Record 'Add' modal/flow only (RecordsPage.tsx), add an 'Add Image' button/file input that allows the user to select one image from their device. Compress the image client-side before storing (max width 1600px, JPEG quality 0.7) using the existing imageCompression.ts utilities. Store the image under a NEW separate localStorage or IndexedDB key (e.g., recordImagesById keyed by record ID) — do NOT modify the existing Record schema or any existing storage keys. Show a small thumbnail preview inside the Add Record UI only. Do not modify the Records list UI. If a record details view already exists, show the image there; otherwise do not create a new details view. All image-related logic must use new helper functions with new names only.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/hooks/useRecordImages.ts",
-          "frontend/src/pages/RecordsPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/hooks/useRecordImages.ts",
-          "frontend/src/pages/RecordsPage.tsx"
-        ]
-      },
-      {
-        "id": "REQ-3",
-        "summary": "In the Record 'Add' modal/flow only (RecordsPage.tsx), add a Mic button for speech-to-text using the browser Web Speech API (SpeechRecognition / webkitSpeechRecognition), following the pattern of the existing useSpeechRecognition.ts hook. Live transcription must append into the existing record text input field (title or body — whichever exists in the Add form). Do NOT store audio; store only the resulting transcribed text via the normal existing save path. If the Web Speech API is unsupported, show a small inline message: 'Speech-to-text not supported on this browser.' All new logic must use new helper functions and new event handlers with new names only.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/pages/RecordsPage.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/src/pages/RecordsPage.tsx"
+          "frontend/src/db/schema.ts",
+          "frontend/src/pages/RoutinesPage.tsx",
+          "frontend/src/hooks/useRoutines.ts",
+          "frontend/src/utils/routineExport.ts",
+          "frontend/src/utils/routineImport.ts"
         ]
       }
     ]
@@ -54,9 +36,12 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/src/hooks/useRecordImages.ts",
-    "frontend/src/pages/RecordsPage.tsx",
-    "frontend/src/utils/recordExport.ts",
+    "frontend/src/db/schema.ts",
+    "frontend/src/hooks/useRoutineImages.ts",
+    "frontend/src/hooks/useRoutines.ts",
+    "frontend/src/pages/RoutinesPage.tsx",
+    "frontend/src/utils/routineExport.ts",
+    "frontend/src/utils/routineImport.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

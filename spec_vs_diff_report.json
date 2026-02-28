@@ -1,33 +1,53 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-28T01:14:15.834Z",
-  "summary": "The diff implements all three requirements (REQ-1, REQ-2, REQ-3) with good coverage. A new recordExport.ts utility handles TXT/DOC/JSON export, a new useRecordImages.ts hook handles image compression and separate storage, and RecordsPage.tsx integrates export buttons, image attachment, and mic speech-to-text in the Add form. One minor gap exists: REQ-2 specifies using the existing imageCompression.ts utilities, but the diff implements its own canvas-based compression inline rather than calling the pre-existing utility. Additionally, the JSON export in recordExport.ts does not format date/time fields as '28 Feb 2026, 3:45 AM' — it serializes records as-is with raw timestamps.",
+  "generatedAt": "2026-02-28T19:52:42.891Z",
+  "summary": "The diff implements image attachment for routine items but deviates from several key requirements: it uses a custom localStorage-based hook (useRoutineImages.ts) instead of the existing useImageStorage hook (IndexedDB imageBlobs table), and uses a custom inline compression function instead of the existing compressImage utility from imageCompression.ts. The core UI features (two input buttons, thumbnail preview, remove/replace) appear to be present in RoutinesPage.tsx based on the imports and state variables visible in the truncated diff.",
   "missing_requirements": [
     {
-      "id": "REQ-2",
-      "requirement": "Compress the image client-side using the existing imageCompression.ts utilities.",
-      "reason": "The diff implements its own canvas-based image compression in useRecordImages.ts (compressRecordImage function) rather than calling the existing imageCompression.ts utilities as specified.",
+      "id": "REQ-1",
+      "requirement": "Store the image using the existing useImageStorage hook (IndexedDB imageBlobs table).",
+      "reason": "The diff creates a new hook useRoutineImages.ts that stores images as base64 data URLs in localStorage under the key 'routineImagesById', not in the IndexedDB imageBlobs table via the existing useImageStorage hook.",
       "evidence": [
-        "frontend/src/hooks/useRecordImages.ts"
+        "frontend/src/hooks/useRoutineImages.ts",
+        "frontend/src/db/schema.ts"
       ]
     },
     {
       "id": "REQ-1",
-      "requirement": "Exported content includes all existing record fields with date/time displayed as '28 Feb 2026, 3:45 AM' (using the existing dateFormatter utility).",
-      "reason": "The JSON export in recordExport.ts uses JSON.stringify(records, null, 2) which serializes raw timestamp values without applying formatDateTime formatting. TXT and DOC exports do format dates, but JSON does not.",
+      "requirement": "Use the existing compressImage utility from imageCompression.ts for compressing uploaded images.",
+      "reason": "The diff defines a new compressRoutineImage function inline in useRoutineImages.ts instead of using the existing compressImage utility from imageCompression.ts.",
       "evidence": [
-        "frontend/src/utils/recordExport.ts"
+        "frontend/src/hooks/useRoutineImages.ts",
+        "frontend/src/pages/RoutinesPage.tsx"
       ]
     }
   ],
-  "hallucinated_features": [],
-  "confidence": 0.8,
+  "hallucinated_features": [
+    {
+      "description": "A new localStorage-based image storage system (useRoutineImages.ts) storing base64 data URLs keyed by routine item ID under 'routineImagesById'.",
+      "reason": "The build request explicitly requires using the existing useImageStorage hook (IndexedDB imageBlobs table). A separate localStorage storage mechanism was not requested.",
+      "evidence": [
+        "frontend/src/hooks/useRoutineImages.ts"
+      ]
+    },
+    {
+      "description": "A custom compressRoutineImage function implemented inside useRoutineImages.ts using canvas-based JPEG compression at 1200px/0.75 quality.",
+      "reason": "The build request explicitly requires using the existing compressImage utility from imageCompression.ts. A new compression utility was not requested.",
+      "evidence": [
+        "frontend/src/hooks/useRoutineImages.ts"
+      ]
+    }
+  ],
+  "confidence": 0.82,
   "changed_files": [
     "frontend-file-summaries.txt",
-    "frontend/src/hooks/useRecordImages.ts",
-    "frontend/src/pages/RecordsPage.tsx",
-    "frontend/src/utils/recordExport.ts",
+    "frontend/src/db/schema.ts",
+    "frontend/src/hooks/useRoutineImages.ts",
+    "frontend/src/hooks/useRoutines.ts",
+    "frontend/src/pages/RoutinesPage.tsx",
+    "frontend/src/utils/routineExport.ts",
+    "frontend/src/utils/routineImport.ts",
     "project_state.json"
   ]
 }

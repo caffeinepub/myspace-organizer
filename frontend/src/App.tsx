@@ -3,7 +3,6 @@ import { AppLayout } from './components/layout/AppLayout';
 import { HomePage } from './pages/HomePage';
 import { StreakPage } from './pages/StreakPage';
 import { QuotePage } from './pages/QuotePage';
-import { RoutinesPage } from './pages/RoutinesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ToastContainer } from './components/common/ToastContainer';
 import { PageSkeleton } from './components/common/LoadingSpinner';
@@ -12,7 +11,8 @@ import { seedDatabase } from './utils/seedData';
 import { registerServiceWorker } from './utils/serviceWorkerRegistration';
 
 const NotesPage = lazy(() => import('./pages/NotesPage').then(m => ({ default: m.NotesPage })));
-const RecordsPage = lazy(() => import('./pages/RecordsPage').then(m => ({ default: m.RecordsPage })));
+const RecordsPage = lazy(() => import('./pages/RecordsPage'));
+const RoutinesPage = lazy(() => import('./pages/RoutinesPage'));
 
 type TabId = 'home' | 'routines' | 'notes' | 'records' | 'settings' | 'streak' | 'quote';
 
@@ -53,7 +53,11 @@ export default function App() {
       case 'quote':
         return <QuotePage onBack={() => setActiveTab('home')} />;
       case 'routines':
-        return <RoutinesPage />;
+        return (
+          <Suspense fallback={<PageSkeleton />}>
+            <RoutinesPage />
+          </Suspense>
+        );
       case 'notes':
         return (
           <Suspense fallback={<PageSkeleton />}>

@@ -1,36 +1,16 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "App with a Records section. User is adding export formats (TXT, DOC, JSON), image attachment input, and speech-to-text mic input to the Record Add flow — all strictly additive, no existing behavior changes.",
-  "architectural_notes": [
-    "All additions must be strictly additive — no changes to existing functions, variables, HTML structure, CSS classes, IDs, or UI logic.",
-    "Images stored under a NEW separate localStorage key (e.g., recordImagesById) to keep existing record schema untouched.",
-    "Export is client-side only and offline; filenames use pattern records_YYYY-MM-DD_HHMM.<ext>."
-  ],
+  "summary": "New project",
+  "architectural_notes": [],
   "known_issues": [],
   "isFixRequest": false,
   "existing_features": [
     {
-      "id": "feature-in-the-records-section-recordspage-tsx-and-userecords-ts-add-three-client-side-export-format-options-txt-word-doc-as-word-compatible-html-and-json-strictly-alongside-any-existing-export-without-modifying-it-each-exported-file-must-include-all-existing-record-fields-exactly-as-stored-with-date-time-formatted-as-28-feb-2026-3-45-am-using-the-existing-dateformatter-utility-filenames-must-follow-the-pattern-records-yyyy-mm-dd-hhmm-txt-doc-json-export-must-be-entirely-client-side-and-offline-implement-export-logic-in-a-new-utility-file-e-g-frontend-src-utils-recordexport-ts-with-new-function-names-only-modeled-after-the-existing-noteexport-ts-and-routineexport-ts-patterns",
-      "title": "In the Records section (RecordsPage.tsx and useRecords.ts), add three client-side export format options — TXT, WORD (DOC as Word-compatible HTML), and JSON — strictly alongside any existing export without modifying it. Each exported file must include all existing record fields exactly as stored, with date+time formatted as '28 Feb 2026, 3:45 AM' (using the existing dateFormatter utility). Filenames must follow the pattern: records_YYYY-MM-DD_HHMM.txt / .doc / .json. Export must be entirely client-side and offline. Implement export logic in a new utility file (e.g., frontend/src/utils/recordExport.ts) with new function names only, modeled after the existing noteExport.ts and routineExport.ts patterns.",
+      "id": "feature-in-the-routines-page-routinespage-tsx-add-an-image-attachment-feature-to-routine-items-each-routine-item-should-support-attaching-an-image-via-two-input-options-1-gallery-file-upload-accept-image-and-2-camera-capture-accept-image-capture-environment-display-a-thumbnail-preview-of-the-attached-image-on-the-routine-item-card-store-the-image-using-the-existing-useimagestorage-hook-indexeddb-imageblobs-table-do-not-modify-any-existing-routine-item-fields-drag-to-reorder-add-edit-delete-speech-recognition-import-export-or-tab-switching-functionality",
+      "title": "In the Routines page (RoutinesPage.tsx), add an image attachment feature to routine items. Each routine item should support attaching an image via two input options: (1) gallery/file upload (accept=\"image/*\") and (2) camera capture (accept=\"image/*\" capture=\"environment\"). Display a thumbnail preview of the attached image on the routine item card. Store the image using the existing useImageStorage hook (IndexedDB imageBlobs table). Do not modify any existing routine item fields, drag-to-reorder, add/edit/delete, speech recognition, import/export, or tab-switching functionality.",
       "reqIds": [
         "REQ-1"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-in-the-record-add-modal-flow-only-recordspage-tsx-add-an-add-image-button-file-input-that-allows-the-user-to-select-one-image-from-their-device-compress-the-image-client-side-before-storing-max-width-1600px-jpeg-quality-0-7-using-the-existing-imagecompression-ts-utilities-store-the-image-under-a-new-separate-localstorage-or-indexeddb-key-e-g-recordimagesbyid-keyed-by-record-id-do-not-modify-the-existing-record-schema-or-any-existing-storage-keys-show-a-small-thumbnail-preview-inside-the-add-record-ui-only-do-not-modify-the-records-list-ui-if-a-record-details-view-already-exists-show-the-image-there-otherwise-do-not-create-a-new-details-view-all-image-related-logic-must-use-new-helper-functions-with-new-names-only",
-      "title": "In the Record 'Add' modal/flow only (RecordsPage.tsx), add an 'Add Image' button/file input that allows the user to select one image from their device. Compress the image client-side before storing (max width 1600px, JPEG quality 0.7) using the existing imageCompression.ts utilities. Store the image under a NEW separate localStorage or IndexedDB key (e.g., recordImagesById keyed by record ID) — do NOT modify the existing Record schema or any existing storage keys. Show a small thumbnail preview inside the Add Record UI only. Do not modify the Records list UI. If a record details view already exists, show the image there; otherwise do not create a new details view. All image-related logic must use new helper functions with new names only.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-in-the-record-add-modal-flow-only-recordspage-tsx-add-a-mic-button-for-speech-to-text-using-the-browser-web-speech-api-speechrecognition-webkitspeechrecognition-following-the-pattern-of-the-existing-usespeechrecognition-ts-hook-live-transcription-must-append-into-the-existing-record-text-input-field-title-or-body-whichever-exists-in-the-add-form-do-not-store-audio-store-only-the-resulting-transcribed-text-via-the-normal-existing-save-path-if-the-web-speech-api-is-unsupported-show-a-small-inline-message-speech-to-text-not-supported-on-this-browser-all-new-logic-must-use-new-helper-functions-and-new-event-handlers-with-new-names-only",
-      "title": "In the Record 'Add' modal/flow only (RecordsPage.tsx), add a Mic button for speech-to-text using the browser Web Speech API (SpeechRecognition / webkitSpeechRecognition), following the pattern of the existing useSpeechRecognition.ts hook. Live transcription must append into the existing record text input field (title or body — whichever exists in the Add form). Do NOT store audio; store only the resulting transcribed text via the normal existing save path. If the Web Speech API is unsupported, show a small inline message: 'Speech-to-text not supported on this browser.' All new logic must use new helper functions and new event handlers with new names only.",
-      "reqIds": [
-        "REQ-3"
       ],
       "version": 1
     }
@@ -38,24 +18,11 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Records export: add TXT, DOC (Word-compatible HTML), and JSON format options with timestamped filenames, client-side only",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Record Add flow: add image input with client-side compression (max 1600px, quality 0.7), thumbnail preview, stored separately from record schema",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Record Add flow: add mic button for speech-to-text via Web Speech API, appending transcription to text field, no audio storage",
+      "summary": "In the routine section, add image upload option alongside existing camera picture upload, without changing existing functionality",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
   "projectName": "MyOrganizer Pro",
   "clarification_mode": "instant",
   "clarification_rounds": 0

@@ -1,76 +1,46 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Records: Add export formats (TXT/DOC/JSON), image attachment, and speech-to-text mic input",
+  "title": "Add image upload and camera capture to Routine section",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add three client-side export format options (TXT, DOC, JSON) to the Records section alongside any existing export, using the existing dateFormatter utility and following the noteExport.ts pattern",
+      "summary": "Add image attachment feature to routine items with gallery upload and camera capture options, storing images in IndexedDB and displaying thumbnails on routine cards",
       "acceptanceCriteria": [
-        "Three new export buttons (TXT, DOC, JSON) appear in the Records section UI without removing or altering any existing export controls.",
-        "Clicking each button triggers a client-side download with the correct filename pattern (records_YYYY-MM-DD_HHMM.ext).",
-        "Exported content includes all existing record fields with date/time displayed as '28 Feb 2026, 3:45 AM'.",
-        "DOC file contains valid Word-compatible HTML wrapped appropriately.",
-        "JSON file contains a valid JSON array of record objects.",
-        "No backend calls are made during export.",
-        "Existing Records functionality is completely unchanged."
+        "Routine item add/edit modal or inline UI shows two distinct buttons/options: one for gallery upload and one for camera capture.",
+        "Gallery upload uses an <input type=\"file\" accept=\"image/*\"> element.",
+        "Camera capture uses an <input type=\"file\" accept=\"image/*\" capture=\"environment\"> element.",
+        "Selected image is compressed (using existing compressImage utility) and saved to IndexedDB via useImageStorage.",
+        "A thumbnail preview of the attached image is visible on the routine item card after saving.",
+        "The attached image can be removed/replaced.",
+        "All existing routine features (drag-to-reorder, time/icon fields, speech recognition, import/export, weekday/weekend/today tabs, complete toggle) remain fully functional and unchanged.",
+        "No backend changes are made."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/utils/recordExport.ts",
-          "operation": "create",
-          "description": "Create new export utility module with functions exportRecordsAsTxt, exportRecordsAsDoc, and exportRecordsAsJson. Model implementation after the existing noteExport.ts pattern. Format dates using the existing dateFormatter utility to produce '28 Feb 2026, 3:45 AM' format. Generate filenames following the pattern records_YYYY-MM-DD_HHMM.ext. Include all record fields exactly as stored. For DOC format, wrap content in Word-compatible HTML structure. All exports must be entirely client-side with no backend calls."
+          "path": "frontend/src/db/schema.ts",
+          "operation": "modify",
+          "description": "Add an optional imageId field (string or undefined) to the RoutineItem interface to store the IndexedDB imageBlobs reference for attached images. Do not modify any other fields in RoutineItem or RoutineProfile."
         },
         {
-          "path": "frontend/src/pages/RecordsPage.tsx",
+          "path": "frontend/src/pages/RoutinesPage.tsx",
           "operation": "modify",
-          "description": "Add three new export buttons (TXT, DOC, JSON) to the Records page UI alongside any existing export controls. Wire each button to call the corresponding new export function from recordExport.ts (exportRecordsAsTxt, exportRecordsAsDoc, exportRecordsAsJson). Pass the current filtered/searched records array to each export function. Ensure the new buttons are visually consistent with the existing UI and do not modify or remove any existing export functionality."
-        }
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "summary": "Add an 'Add Image' button to the Record Add modal that allows selecting and compressing one image, storing it in a new separate storage key (recordImagesById), and showing a thumbnail preview",
-      "acceptanceCriteria": [
-        "An 'Add Image' button appears inside the Record Add form only.",
-        "User can select one image file from their device.",
-        "Selected image is compressed to max 1600px width at ~0.7 JPEG quality before storage.",
-        "Image is stored under a new separate storage key (not mixed with existing record data).",
-        "A small thumbnail preview is shown in the Add Record UI after selection.",
-        "The Records list view is visually unchanged.",
-        "Existing record schema and all existing storage keys remain untouched.",
-        "All new functions have new unique names not overlapping any existing function names."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/hooks/useRecordImages.ts",
-          "operation": "create",
-          "description": "Create new custom hook useRecordImages that manages record image attachments in a separate localStorage or IndexedDB key named 'recordImagesById'. Provide new functions saveRecordImage, getRecordImage, and deleteRecordImage with unique names not overlapping existing functions. Use the existing imageCompression.ts utilities to compress images to max 1600px width at 0.7 JPEG quality before storage. Store images keyed by record ID so the existing record schema remains untouched."
+          "description": "Add image upload UI to the routine item add/edit modal or inline form. Include two distinct input options: (1) a button/input for gallery upload using <input type=\"file\" accept=\"image/*\"> and (2) a button/input for camera capture using <input type=\"file\" accept=\"image/*\" capture=\"environment\">. When an image is selected, compress it using the existing compressImage utility from imageCompression.ts, save it via useImageStorage hook, and store the returned imageId in the routine item. Display a thumbnail preview of the attached image in the modal/form. Add a remove/replace button for the image. On routine item cards, display a thumbnail preview if imageId is present by retrieving the image URL via useImageStorage. Ensure all existing functionality (drag-to-reorder, time/icon fields, speech recognition, import/export, tab switching, complete toggle) remains unchanged. Use the existing useImageStorage hook for all image storage operations. Verify the useImageStorage hook's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/pages/RecordsPage.tsx",
+          "path": "frontend/src/hooks/useRoutines.ts",
           "operation": "modify",
-          "description": "In the Record Add modal only, add an 'Add Image' button/file input that allows selecting one image file. Wire the file input to call saveRecordImage from the new useRecordImages hook. Show a small thumbnail preview of the selected image within the Add Record UI. Do not modify the Records list view UI. If a record details view already exists in this file, also display the attached image there using getRecordImage. All new event handlers and state variables must have unique new names."
-        }
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "summary": "Add a Mic button to the Record Add modal for speech-to-text transcription using the Web Speech API, appending live transcription to the existing text input field",
-      "acceptanceCriteria": [
-        "A Mic button appears inside the Record Add form only.",
-        "Clicking the Mic button activates speech recognition and appends live transcription to the existing text input field.",
-        "No audio data is stored; only transcribed text is retained.",
-        "The transcribed text flows through the existing save logic without any changes to that logic.",
-        "If SpeechRecognition API is unavailable, an inline message 'Speech-to-text not supported on this browser.' is displayed near the Mic button.",
-        "Existing Records functionality and save logic are completely unchanged.",
-        "All new functions and event handlers have unique new names."
-      ],
-      "file_operations": [
+          "description": "Update the addRoutine and updateRoutine functions to handle the new optional imageId field in RoutineItem when saving to IndexedDB. When deleting a routine item, check if it has an imageId and call deleteImage from useImageStorage to clean up the orphaned image blob. Do not modify any other routine management logic, including reorder, toggle-complete, or profile switching functionality."
+        },
         {
-          "path": "frontend/src/pages/RecordsPage.tsx",
+          "path": "frontend/src/utils/routineExport.ts",
           "operation": "modify",
-          "description": "In the Record Add modal only, add a Mic button for speech-to-text. Use the existing useSpeechRecognition.ts hook to handle speech recognition. Wire the Mic button to start/stop listening, and append live transcription results into the existing record text input field (title or body, whichever exists in the Add form). Do not store any audio data; only the transcribed text should be saved via the existing save logic. If the Web Speech API is unsupported, display the inline message 'Speech-to-text not supported on this browser.' near the Mic button. All new event handlers and state variables must have unique new names not overlapping existing ones."
+          "description": "Update the export functions (TXT, DOC, JSON) to include the imageId field when exporting routine items. For JSON export, include imageId as-is. For TXT and DOC exports, optionally mention if an image is attached (e.g., '[Image attached]') without embedding the actual image data."
+        },
+        {
+          "path": "frontend/src/utils/routineImport.ts",
+          "operation": "modify",
+          "description": "Update the import parsers (JSON, TXT, DOC) to handle the optional imageId field when importing routine items. For JSON imports, preserve the imageId if present (note: the actual image blob must already exist in IndexedDB for the reference to be valid). For TXT and DOC imports, imageId will typically be undefined since image data is not embedded in those formats."
         }
       ]
     }

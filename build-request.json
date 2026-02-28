@@ -1,106 +1,44 @@
 {
   "kind": "build_request",
-  "title": "Records: Add export formats (TXT/DOC/JSON), image attachment, and speech-to-text mic input",
+  "title": "Add image upload and camera capture to Routine section",
   "projectName": "MyOrganizer Pro",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In the Records section (RecordsPage.tsx and useRecords.ts), add three client-side export format options — TXT, WORD (DOC as Word-compatible HTML), and JSON — strictly alongside any existing export without modifying it. Each exported file must include all existing record fields exactly as stored, with date+time formatted as '28 Feb 2026, 3:45 AM' (using the existing dateFormatter utility). Filenames must follow the pattern: records_YYYY-MM-DD_HHMM.txt / .doc / .json. Export must be entirely client-side and offline. Implement export logic in a new utility file (e.g., frontend/src/utils/recordExport.ts) with new function names only, modeled after the existing noteExport.ts and routineExport.ts patterns.",
+      "text": "In the Routines page (RoutinesPage.tsx), add an image attachment feature to routine items. Each routine item should support attaching an image via two input options: (1) gallery/file upload (accept=\"image/*\") and (2) camera capture (accept=\"image/*\" capture=\"environment\"). Display a thumbnail preview of the attached image on the routine item card. Store the image using the existing useImageStorage hook (IndexedDB imageBlobs table). Do not modify any existing routine item fields, drag-to-reorder, add/edit/delete, speech recognition, import/export, or tab-switching functionality.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "msg-20"
         ],
         "quotes": [
-          "In the Records section, add export format options: 1) TXT 2) WORD (DOC; Word-compatible HTML inside .doc) 3) JSON",
-          "Export must be client-side only and offline.",
-          "Filenames: records_YYYY-MM-DD_HHMM.txt / .doc / .json",
-          "Do NOT change how existing export works (if export already exists). Only add these extra format choices alongside it."
+          "In routine section add give image upload along with camera pic upload",
+          "Note don't change anything in existing"
         ]
       },
       "acceptanceCriteria": [
-        "Three new export buttons (TXT, DOC, JSON) appear in the Records section UI without removing or altering any existing export controls.",
-        "Clicking each button triggers a client-side download with the correct filename pattern (records_YYYY-MM-DD_HHMM.ext).",
-        "Exported content includes all existing record fields with date/time displayed as '28 Feb 2026, 3:45 AM'.",
-        "DOC file contains valid Word-compatible HTML wrapped appropriately.",
-        "JSON file contains a valid JSON array of record objects.",
-        "No backend calls are made during export.",
-        "Existing Records functionality is completely unchanged."
-      ]
-    },
-    {
-      "id": "REQ-2",
-      "text": "In the Record 'Add' modal/flow only (RecordsPage.tsx), add an 'Add Image' button/file input that allows the user to select one image from their device. Compress the image client-side before storing (max width 1600px, JPEG quality 0.7) using the existing imageCompression.ts utilities. Store the image under a NEW separate localStorage or IndexedDB key (e.g., recordImagesById keyed by record ID) — do NOT modify the existing Record schema or any existing storage keys. Show a small thumbnail preview inside the Add Record UI only. Do not modify the Records list UI. If a record details view already exists, show the image there; otherwise do not create a new details view. All image-related logic must use new helper functions with new names only.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "In the Record 'Add' flow ONLY, add an 'Add Image' button/input.",
-          "Store the image ONLY as an attached optional field without changing existing record fields",
-          "If modifying the record object is risky, store image attachments in a separate key (e.g., recordImagesById[recordId]) so record schema stays untouched.",
-          "Compress image client-side before saving: max width 1600px, quality ~0.7",
-          "Show a small thumbnail preview in the Add Record UI.",
-          "Do not modify the Records list UI"
-        ]
-      },
-      "acceptanceCriteria": [
-        "An 'Add Image' button appears inside the Record Add form only.",
-        "User can select one image file from their device.",
-        "Selected image is compressed to max 1600px width at ~0.7 JPEG quality before storage.",
-        "Image is stored under a new separate storage key (not mixed with existing record data).",
-        "A small thumbnail preview is shown in the Add Record UI after selection.",
-        "The Records list view is visually unchanged.",
-        "Existing record schema and all existing storage keys remain untouched.",
-        "All new functions have new unique names not overlapping any existing function names."
-      ]
-    },
-    {
-      "id": "REQ-3",
-      "text": "In the Record 'Add' modal/flow only (RecordsPage.tsx), add a Mic button for speech-to-text using the browser Web Speech API (SpeechRecognition / webkitSpeechRecognition), following the pattern of the existing useSpeechRecognition.ts hook. Live transcription must append into the existing record text input field (title or body — whichever exists in the Add form). Do NOT store audio; store only the resulting transcribed text via the normal existing save path. If the Web Speech API is unsupported, show a small inline message: 'Speech-to-text not supported on this browser.' All new logic must use new helper functions and new event handlers with new names only.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "In the Record 'Add' flow ONLY, add a Mic button for speech-to-text.",
-          "Use browser Web Speech API (SpeechRecognition / webkitSpeechRecognition).",
-          "Live transcription should append into the current record text field being typed (title/body input—whichever exists).",
-          "Do NOT store audio. Only store resulting text.",
-          "If unsupported, show a small inline message: 'Speech-to-text not supported on this browser.'"
-        ]
-      },
-      "acceptanceCriteria": [
-        "A Mic button appears inside the Record Add form only.",
-        "Clicking the Mic button activates speech recognition and appends live transcription to the existing text input field.",
-        "No audio data is stored; only transcribed text is retained.",
-        "The transcribed text flows through the existing save logic without any changes to that logic.",
-        "If SpeechRecognition API is unavailable, an inline message 'Speech-to-text not supported on this browser.' is displayed near the Mic button.",
-        "Existing Records functionality and save logic are completely unchanged.",
-        "All new functions and event handlers have unique new names."
+        "Routine item add/edit modal or inline UI shows two distinct buttons/options: one for gallery upload and one for camera capture.",
+        "Gallery upload uses an <input type=\"file\" accept=\"image/*\"> element.",
+        "Camera capture uses an <input type=\"file\" accept=\"image/*\" capture=\"environment\"> element.",
+        "Selected image is compressed (using existing compressImage utility) and saved to IndexedDB via useImageStorage.",
+        "A thumbnail preview of the attached image is visible on the routine item card after saving.",
+        "The attached image can be removed/replaced.",
+        "All existing routine features (drag-to-reorder, time/icon fields, speech recognition, import/export, weekday/weekend/today tabs, complete toggle) remain fully functional and unchanged.",
+        "No backend changes are made."
       ]
     }
   ],
   "constraints": [
-    "Do NOT change any existing behavior, functions, variables, HTML structure, CSS classes, IDs, or UI logic anywhere in the app.",
-    "Do NOT modify existing localStorage keys or existing IndexedDB stores/schemas.",
-    "All additions must be strictly additive — no refactoring, renaming, or moving of existing code.",
-    "New image storage must use a completely separate storage key from existing record data.",
-    "All new helper functions and event handlers must have new unique names not overlapping existing ones.",
-    "Export must be entirely client-side with no backend calls.",
-    "Do NOT modify backend/main.mo or any backend logic."
+    "Do not change any existing routine item fields, drag-to-reorder logic, tab navigation, speech recognition, import/export, or any other existing functionality in RoutinesPage.tsx or useRoutines.ts.",
+    "Use the existing useImageStorage hook for storing and retrieving images.",
+    "Use the existing compressImage utility from imageCompression.ts for compressing uploaded images.",
+    "Do not modify any immutable frontend paths."
   ],
   "nonGoals": [
-    "Modifying the existing JSON export in Records if one already exists.",
-    "Changing the Record data schema or existing record fields.",
-    "Adding a record details view if one does not already exist.",
-    "Showing images in the Records list view.",
-    "Storing or transmitting audio data.",
-    "Any changes outside the Records section.",
-    "Backend schema or API changes."
+    "Adding image upload to Notes or Records pages (already exists).",
+    "Changing the backend schema or Motoko actor.",
+    "Modifying any existing UI layout beyond adding the image upload controls."
   ],
   "imageRequirements": {
     "required": [],

@@ -59,6 +59,7 @@ function formatItemForTxt(item: RoutineItem, pType: string): string {
   if (item.tag) lines.push(`    Tag: ${item.tag}`);
   if (item.icon) lines.push(`    Icon: ${item.icon}`);
   if (item.duration !== undefined) lines.push(`    Duration: ${item.duration} min`);
+  if (item.imageId) lines.push(`    Image: [Image attached]`);
   return lines.join('\n');
 }
 
@@ -79,11 +80,12 @@ function formatItemForDoc(item: RoutineItem, pType: string): string {
   const tag = item.tag ? `<p><strong>Tag:</strong> ${escapeHtml(item.tag)}</p>` : '';
   const icon = item.icon ? `<p><strong>Icon:</strong> ${escapeHtml(item.icon)}</p>` : '';
   const duration = item.duration !== undefined ? `<p><strong>Duration:</strong> ${item.duration} min</p>` : '';
+  const imageNote = item.imageId ? `<p><em>[Image attached]</em></p>` : '';
   return `
     <div style="margin-left:16px; margin-bottom:12px; border-left:3px solid #ccc; padding-left:8px;">
       <strong>${escapeHtml(item.title || '(untitled)')}</strong>
       <p><strong>Profile:</strong> ${escapeHtml(profileLabel(pType))} &nbsp; <strong>Time:</strong> ${escapeHtml(formatTimeAmPm(item.time || ''))}</p>
-      ${tag}${icon}${duration}
+      ${tag}${icon}${duration}${imageNote}
     </div>`;
 }
 

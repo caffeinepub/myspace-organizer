@@ -14,6 +14,7 @@ function makeRoutineItem(overrides: {
   duration?: number;
   completed?: boolean;
   order?: number;
+  imageId?: string;
 }): RoutineItem {
   return {
     id: overrides.id,
@@ -24,6 +25,7 @@ function makeRoutineItem(overrides: {
     duration: overrides.duration,
     completed: overrides.completed ?? false,
     order: overrides.order ?? 0,
+    imageId: overrides.imageId,
   };
 }
 
@@ -45,6 +47,9 @@ function parseJsonRoutines(text: string): RoutineProfile[] {
             duration: typeof ri.duration === 'number' ? ri.duration : undefined,
             completed: !!ri.completed,
             order: typeof ri.order === 'number' ? ri.order : idx,
+            // imageId is preserved from JSON if present, but the actual image blob
+            // must already exist in localStorage for the reference to be valid
+            imageId: typeof ri.imageId === 'string' ? ri.imageId : undefined,
           })
         )
       : [];
@@ -78,6 +83,7 @@ function parseTxtRoutines(text: string): RoutineProfile[] {
               time: currentTime,
               tag: currentTag,
               order: items.length,
+              // imageId is not preserved from TXT format
             }));
           }
           currentTitle = trimmed.replace('- Title:', '').trim();

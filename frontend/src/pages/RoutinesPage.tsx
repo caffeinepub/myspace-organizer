@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Plus, GripVertical, Check, Pencil, Trash2, Clock, Download, Upload, Mic, MicOff, FileText, FileDown, Braces } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Plus, GripVertical, Trash2, Pencil, Check, X, FileDown, ChevronDown, Upload, Mic, MicOff, Clock, Camera, ImageIcon } from 'lucide-react';
 import { useRoutines, getTodayProfile, type ProfileType } from '../hooks/useRoutines';
 import { Modal } from '../components/common/Modal';
 import type { RoutineItem, RoutineProfile } from '../db/schema';
@@ -26,6 +26,12 @@ import {
 } from '../utils/routineExport';
 import { importRoutinesFromFile } from '../utils/routineImport';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import {
+  compressRoutineImage,
+  saveRoutineImage,
+  getRoutineImage,
+  deleteRoutineImage,
+} from '../hooks/useRoutineImages';
 
 const TABS = [
   { id: 'today', label: 'Today (Auto)' },
@@ -45,7 +51,7 @@ function formatTime(time: string): string {
   }
 }
 
-export function RoutinesPage() {
+export default function RoutinesPage() {
   const { weekday, weekend, loading, addItem, updateItem, deleteItem, toggleComplete, reorderItems, reload } = useRoutines();
   const [activeTab, setActiveTab] = useState<TabId>('today');
   const [showForm, setShowForm] = useState(false);
@@ -58,6 +64,15 @@ export function RoutinesPage() {
   const [formTag, setFormTag] = useState('');
   const [formIcon, setFormIcon] = useState('⭐');
   const [formDuration, setFormDuration] = useState('');
+
+  // Image state for the form
+  const [formImagePreview, setFormImagePreview] = useState<string | null>(null);
+  const [formImageId, setFormImageId] = useState<string | undefined>(undefined);
+  const [isCompressingImage, setIsCompressingImage] = useState(false);
+
+  // File input refs for gallery and camera
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // Import state
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -75,7 +90,7 @@ export function RoutinesPage() {
   } = useSpeechRecognition();
 
   // Append finalized transcript to title field
-  useEffect(() => {
+  React.useEffect(() => {
     if (transcript) {
       setFormTitle(prev => {
         const separator = prev && !prev.endsWith(' ') ? ' ' : '';
@@ -86,7 +101,7 @@ export function RoutinesPage() {
   }, [transcript, resetTranscript]);
 
   // Stop listening when form closes
-  useEffect(() => {
+  React.useEffect(() => {
     if (!showForm && isListening) {
       stopListening();
     }
@@ -107,6 +122,8 @@ export function RoutinesPage() {
     setFormTag('');
     setFormIcon('⭐');
     setFormDuration('');
+    setFormImagePreview(null);
+    setFormImageId(undefined);
     resetTranscript();
     setShowForm(true);
   };
@@ -118,14 +135,70 @@ export function RoutinesPage() {
     setFormTag(item.tag || '');
     setFormIcon(item.icon || '⭐');
     setFormDuration(item.duration?.toString() || '');
+    // Load existing image if any
+    if (item.imageId) {
+      const existing = getRoutineImage(item.imageId);
+      setFormImagePreview(existing);
+      setFormImageId(item.imageId);
+    } else {
+      setFormImagePreview(null);
+      setFormImageId(undefined);
+    }
     resetTranscript();
     setShowForm(true);
+  };
+
+  const handleImageFile = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      showErrorToast('Please select a valid image file');
+      return;
+    }
+    setIsCompressingImage(true);
+    try {
+      const dataUrl = await compressRoutineImage(file);
+      // Generate a stable imageId for this item (reuse existing or create new)
+      const imageId = formImageId || Math.random().toString(36).slice(2);
+      saveRoutineImage(imageId, dataUrl);
+      setFormImagePreview(dataUrl);
+      setFormImageId(imageId);
+    } catch {
+      showErrorToast('Failed to process image');
+    } finally {
+      setIsCompressingImage(false);
+    }
+  };
+
+  const handleGalleryChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await handleImageFile(file);
+    // Reset input so same file can be re-selected
+    if (galleryInputRef.current) galleryInputRef.current.value = '';
+  };
+
+  const handleCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await handleImageFile(file);
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+  };
+
+  const handleRemoveImage = () => {
+    if (formImageId) {
+      deleteRoutineImage(formImageId);
+    }
+    setFormImagePreview(null);
+    setFormImageId(undefined);
   };
 
   const handleSave = async () => {
     if (isListening) stopListening();
     if (!formTitle.trim()) { showErrorToast('Title is required'); return; }
     if (editingItem) {
+      // If image was removed (had one before, now none), clean up old image
+      if (editingItem.imageId && !formImageId) {
+        deleteRoutineImage(editingItem.imageId);
+      }
       await updateItem(activeProfileType, {
         ...editingItem,
         time: formTime,
@@ -133,6 +206,7 @@ export function RoutinesPage() {
         tag: formTag.trim() || undefined,
         icon: formIcon,
         duration: formDuration ? parseInt(formDuration) : undefined,
+        imageId: formImageId,
       });
     } else {
       const newItem: RoutineItem = {
@@ -144,6 +218,7 @@ export function RoutinesPage() {
         duration: formDuration ? parseInt(formDuration) : undefined,
         completed: false,
         order: items.length,
+        imageId: formImageId,
       };
       await addItem(activeProfileType, newItem);
     }
@@ -207,7 +282,7 @@ export function RoutinesPage() {
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold">Routines</h1>
         <div className="flex items-center gap-2">
-          {/* Import */}
+          {/* Import — same style as Notes */}
           <input
             ref={importInputRef}
             type="file"
@@ -219,47 +294,47 @@ export function RoutinesPage() {
           <button
             onClick={handleImportClick}
             disabled={isImporting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors text-muted-foreground disabled:opacity-50"
+            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground disabled:opacity-50"
             aria-label="Import routines"
-            title="Import routines"
+            title="Import Routines"
           >
             <Upload className="w-4 h-4" />
-            <span className="hidden sm:inline">Import</span>
           </button>
 
-          {/* Export dropdown */}
+          {/* Export dropdown — same style as Notes */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors text-muted-foreground"
+                className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
                 aria-label="Export routines"
-                title="Export routines"
+                title="Export Routines"
               >
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Export</span>
+                <FileDown className="w-4 h-4" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Export All Profiles</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => exportAllRoutinesAsTxt(allProfiles)} className="gap-2 text-sm">
-                <FileText className="w-4 h-4" /> TXT
+              <DropdownMenuLabel>Export All Profiles</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => exportAllRoutinesAsTxt(allProfiles)}>
+                Export as TXT
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportAllRoutinesAsDoc(allProfiles)} className="gap-2 text-sm">
-                <FileDown className="w-4 h-4" /> WORD (DOC)
+              <DropdownMenuItem onClick={() => exportAllRoutinesAsDoc(allProfiles)}>
+                Export as WORD (DOC)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => exportAllRoutinesAsJson(allProfiles)} className="gap-2 text-sm">
-                <Braces className="w-4 h-4" /> JSON
+              <DropdownMenuItem onClick={() => exportAllRoutinesAsJson(allProfiles)}>
+                Export as JSON
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Export Active Profile</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => profile && exportSelectedRoutinesAsTxt([profile])} disabled={!profile} className="gap-2 text-sm">
-                <FileText className="w-4 h-4" /> TXT
+              <DropdownMenuLabel>Export Active Profile</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => profile && exportSelectedRoutinesAsTxt([profile])} disabled={!profile}>
+                Export as TXT
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => profile && exportSelectedRoutinesAsDoc([profile])} disabled={!profile} className="gap-2 text-sm">
-                <FileDown className="w-4 h-4" /> WORD (DOC)
+              <DropdownMenuItem onClick={() => profile && exportSelectedRoutinesAsDoc([profile])} disabled={!profile}>
+                Export as WORD (DOC)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => profile && exportSelectedRoutinesAsJson([profile])} disabled={!profile} className="gap-2 text-sm">
-                <Braces className="w-4 h-4" /> JSON
+              <DropdownMenuItem onClick={() => profile && exportSelectedRoutinesAsJson([profile])} disabled={!profile}>
+                Export as JSON
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -303,60 +378,93 @@ export function RoutinesPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {items.map((item, idx) => (
-            <div
-              key={item.id}
-              draggable
-              onDragStart={() => handleDragStart(idx)}
-              onDragOver={e => handleDragOver(e, idx)}
-              onDragEnd={handleDragEnd}
-              className={`
-                flex items-center gap-3 bg-card rounded-xl border border-border/50 p-3
-                transition-all duration-150 cursor-grab active:cursor-grabbing
-                ${item.completed ? 'opacity-60' : ''}
-                ${dragIndex === idx ? 'opacity-50 scale-[0.98]' : ''}
-              `}
-            >
-              <GripVertical className="w-4 h-4 text-muted-foreground/40 shrink-0" />
-
-              <button
-                onClick={() => toggleComplete(activeProfileType, item.id)}
-                className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all duration-200
-                  ${item.completed ? 'bg-primary border-primary animate-check-bounce' : 'border-muted-foreground hover:border-primary'}`}
-                aria-label={`${item.completed ? 'Uncheck' : 'Complete'} ${item.title}`}
+          {items.map((item, idx) => {
+            const itemImage = item.imageId ? getRoutineImage(item.imageId) : null;
+            return (
+              <div
+                key={item.id}
+                draggable
+                onDragStart={() => handleDragStart(idx)}
+                onDragOver={e => handleDragOver(e, idx)}
+                onDragEnd={handleDragEnd}
+                className={`
+                  flex items-center gap-3 bg-card rounded-xl border border-border/50 p-3
+                  transition-all duration-150 cursor-grab active:cursor-grabbing
+                  ${item.completed ? 'opacity-60' : ''}
+                  ${dragIndex === idx ? 'opacity-50 scale-[0.98]' : ''}
+                `}
               >
-                {item.completed && <Check className="w-3 h-3 text-primary-foreground" />}
-              </button>
+                <GripVertical className="w-4 h-4 text-muted-foreground/40 shrink-0" />
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  {item.icon && <span className="text-sm">{item.icon}</span>}
-                  <span className={`text-sm font-medium truncate ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
-                    {item.title}
-                  </span>
+                <button
+                  onClick={() => toggleComplete(activeProfileType, item.id)}
+                  className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all duration-200
+                    ${item.completed ? 'bg-primary border-primary animate-check-bounce' : 'border-muted-foreground hover:border-primary'}`}
+                  aria-label={`${item.completed ? 'Uncheck' : 'Complete'} ${item.title}`}
+                >
+                  {item.completed && <Check className="w-3 h-3 text-primary-foreground" />}
+                </button>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    {item.icon && <span className="text-sm">{item.icon}</span>}
+                    <span className={`text-sm font-medium truncate ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
+                      {item.title}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-muted-foreground">{formatTime(item.time)}</span>
+                    {item.duration && (
+                      <span className="text-xs text-muted-foreground">· {item.duration}min</span>
+                    )}
+                    {item.tag && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{item.tag}</span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-xs text-muted-foreground">{formatTime(item.time)}</span>
-                  {item.duration && (
-                    <span className="text-xs text-muted-foreground">· {item.duration}min</span>
-                  )}
-                  {item.tag && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">{item.tag}</span>
-                  )}
-                </div>
+
+                {/* Thumbnail preview on card */}
+                {itemImage && (
+                  <div className="shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-border/50">
+                    <img
+                      src={itemImage}
+                      alt="Routine item"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
+                <button
+                  onClick={() => openEdit(item)}
+                  className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+                  aria-label={`Edit ${item.title}`}
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
               </div>
-
-              <button
-                onClick={() => openEdit(item)}
-                className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
-                aria-label={`Edit ${item.title}`}
-              >
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
+
+      {/* Hidden file inputs for image upload */}
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleGalleryChange}
+        aria-label="Upload image from gallery"
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleCameraChange}
+        aria-label="Capture image from camera"
+      />
 
       {/* Add/Edit Form Modal */}
       <Modal isOpen={showForm} onClose={() => setShowForm(false)} title={editingItem ? 'Edit Routine Item' : 'Add Routine Item'} size="md">
@@ -424,6 +532,78 @@ export function RoutinesPage() {
               ))}
             </div>
           </div>
+
+          {/* Image Upload Section */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Image (optional)</label>
+            {formImagePreview ? (
+              <div className="relative rounded-xl overflow-hidden border border-border/50">
+                <img
+                  src={formImagePreview}
+                  alt="Routine item preview"
+                  className="w-full max-h-48 object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute top-2 right-2 p-1 rounded-full bg-background/80 hover:bg-background border border-border/50 text-muted-foreground hover:text-destructive transition-colors"
+                  aria-label="Remove image"
+                  title="Remove image"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+                <div className="absolute bottom-2 right-2 flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => galleryInputRef.current?.click()}
+                    disabled={isCompressingImage}
+                    className="p-1.5 rounded-lg bg-background/80 hover:bg-background border border-border/50 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                    aria-label="Replace with gallery image"
+                    title="Replace from gallery"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    disabled={isCompressingImage}
+                    className="p-1.5 rounded-lg bg-background/80 hover:bg-background border border-border/50 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+                    aria-label="Replace with camera photo"
+                    title="Replace with camera"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={isCompressingImage}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground transition-all disabled:opacity-50"
+                  aria-label="Upload image from gallery"
+                >
+                  <ImageIcon className="w-4 h-4" />
+                  <span className="text-xs font-medium">Gallery</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  disabled={isCompressingImage}
+                  className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground transition-all disabled:opacity-50"
+                  aria-label="Capture image from camera"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span className="text-xs font-medium">Camera</span>
+                </button>
+              </div>
+            )}
+            {isCompressingImage && (
+              <p className="mt-1.5 text-xs text-muted-foreground">Processing image…</p>
+            )}
+          </div>
+
           <div className="flex gap-2 pt-2">
             {editingItem && (
               <Button variant="destructive" onClick={() => handleDelete(editingItem.id)} className="gap-1" aria-label="Delete routine item">
