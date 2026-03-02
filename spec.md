@@ -1,13 +1,11 @@
 # Specification
 
 ## Summary
-**Goal:** Add image upload and camera capture functionality to routine items in the Routines page.
+**Goal:** Fix image aspect ratio in the Notes view and add file upload functionality to the Routines section.
 
 **Planned changes:**
-- Add two image input options to each routine item's add/edit UI: one for gallery/file upload and one for camera capture.
-- Compress selected images using the existing `compressImage` utility and store them in IndexedDB via the existing `useImageStorage` hook.
-- Display a thumbnail preview of the attached image on the routine item card.
-- Allow the attached image to be removed or replaced.
-- Leave all existing routine features (drag-to-reorder, time/icon fields, speech recognition, import/export, weekday/weekend/today tabs, complete toggle, add/edit/delete) fully unchanged.
+- Remove fixed aspect ratio constraints (e.g., `aspect-video`, `aspect-square`) from image containers in NoteCard and NoteModal so images display at their natural dimensions
+- Integrate the existing `ImageUploadPicker` component into RoutinesPage using the same UI, styling, trigger button, dropdown options (camera, gallery, file), and outside-click/Escape dismissal behavior as the Notes section
+- Store and display uploaded images within routine items using the same logic as notes
 
-**User-visible outcome:** Users can attach a photo to any routine item either by choosing from their gallery or taking a camera photo. A thumbnail of the attached image appears on the routine card and can be removed or replaced at any time.
+**User-visible outcome:** Images in the Notes view no longer appear letterboxed or cropped — they display at their natural proportions. Routine items now have the same image upload capability as notes, with identical UI and behavior.

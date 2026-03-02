@@ -1,8 +1,11 @@
 import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Iter "mo:core/Iter";
+import MixinStorage "blob-storage/Mixin";
 
 actor {
+  include MixinStorage();
+
   // Persistent labels map
   let labels = Map.empty<Text, Text>();
 

@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Pin, Archive, Trash2, Bell, X, Plus, Minus, Image as ImageIcon, Mic, MicOff, FileDown } from 'lucide-react';
+import { Pin, Archive, Trash2, X, Plus, Minus, Mic, MicOff, FileDown } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import type { Note, NoteChecklistItem } from '../../db/schema';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { useLabels } from '../../hooks/useLabels';
 import { useImageStorage } from '../../hooks/useImageStorage';
 import { compressImage, generateThumbnail } from '../../utils/imageCompression';
@@ -12,6 +9,7 @@ import { showErrorToast } from '../../store/toastStore';
 import { format } from 'date-fns';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { exportNoteAsDoc } from '../../utils/noteExport';
+import { ImageUploadPicker } from '../common/ImageUploadPicker';
 
 const NOTE_COLORS = [
   { label: 'Default', value: 'default' },
@@ -51,11 +49,21 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showLabelPicker, setShowLabelPicker] = useState(false);
   const [newCheckItem, setNewCheckItem] = useState('');
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [imgNaturalAspect, setImgNaturalAspect] = useState<number | null>(null);
 
   // Track which field is "active" for speech insertion: 'title' | 'content'
   const [activeField, setActiveField] = useState<'title' | 'content'>('content');
   const contentRef = useRef<HTMLTextAreaElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
+
+  // Hidden file input refs for the three upload options
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Ref for the upload trigger button (for picker positioning)
+  const uploadTriggerRef = useRef<HTMLDivElement>(null);
 
   // Speech recognition
   const {
@@ -80,9 +88,12 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
       setColor(note.color || 'default');
       setSelectedLabels(note.labels);
       setReminderAt(note.reminderAt ? format(new Date(note.reminderAt), "yyyy-MM-dd'T'HH:mm") : '');
+      setImgNaturalAspect(null);
       // Load image if image note
       if (note.type === 'image' && note.imageRefs.length > 0) {
         getImageUrl(note.imageRefs[0], 'full').then(url => setImageUrl(url));
+      } else {
+        setImageUrl(null);
       }
     }
   }, [note, getImageUrl]);
@@ -93,6 +104,7 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
       if (isListening) stopListening();
       resetTranscript();
       lastTranscriptRef.current = '';
+      setShowImagePicker(false);
     }
   }, [isOpen, isListening, stopListening, resetTranscript]);
 
@@ -177,6 +189,8 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !note) return;
+    // Reset input value so the same file can be re-selected
+    e.target.value = '';
     try {
       const [compressed, thumbnail] = await Promise.all([
         compressImage(file),
@@ -187,6 +201,7 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
       await saveImage(key, thumbnail, 'thumbnail');
       const url = URL.createObjectURL(compressed);
       setImageUrl(url);
+      setImgNaturalAspect(null);
       // Update imageRefs
       const updated: Note = { ...note, title, content, checklistItems, color, labels: selectedLabels, imageRefs: [key] };
       onSave(updated);
@@ -194,6 +209,13 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
       showErrorToast('Failed to upload image');
     }
   }, [note, title, content, checklistItems, color, selectedLabels, saveImage, onSave]);
+
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (img.naturalWidth && img.naturalHeight) {
+      setImgNaturalAspect(img.naturalWidth / img.naturalHeight);
+    }
+  };
 
   if (!note) return null;
 
@@ -324,7 +346,6 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
               ref={contentRef}
               value={content + (isListening && interimTranscript ? interimTranscript : '')}
               onChange={e => {
-                // Only update content if not the interim part
                 const val = e.target.value;
                 if (isListening && interimTranscript && val.endsWith(interimTranscript)) {
                   setContent(val.slice(0, val.length - interimTranscript.length));
@@ -421,27 +442,75 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
 
         {note.type === 'image' && (
           <div className="space-y-3">
+            {/* Hidden file inputs for the three upload options */}
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleImageUpload}
+              aria-label="Capture image with camera"
+            />
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+              aria-label="Select image from gallery"
+            />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              className="hidden"
+              onChange={handleImageUpload}
+              aria-label="Upload image file"
+            />
+
+            {/* Image preview — natural aspect ratio, no fixed constraints */}
             {imageUrl ? (
-              <img src={imageUrl} alt="Note image" className="w-full rounded-lg object-cover max-h-64" />
-            ) : (
-              <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                <ImageIcon className="w-8 h-8 text-muted-foreground mb-2" />
-                <span className="text-sm text-muted-foreground">Tap to add image</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                  aria-label="Upload image"
+              <div className="w-full overflow-hidden rounded-lg">
+                <img
+                  src={imageUrl}
+                  alt="Note"
+                  className="w-full h-auto object-contain bg-muted/20"
+                  style={imgNaturalAspect ? { aspectRatio: String(imgNaturalAspect) } : undefined}
+                  onLoad={handleImageLoad}
                 />
-              </label>
+              </div>
+            ) : (
+              /* Upload picker trigger */
+              <div ref={uploadTriggerRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowImagePicker(prev => !prev)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-colors text-sm text-muted-foreground w-full justify-center"
+                  aria-label="Add image"
+                  aria-expanded={showImagePicker}
+                >
+                  <span>📷</span>
+                  <span>Add Image</span>
+                </button>
+                {showImagePicker && (
+                  <ImageUploadPicker
+                    isOpen={showImagePicker}
+                    onClose={() => setShowImagePicker(false)}
+                    onCameraClick={() => cameraInputRef.current?.click()}
+                    onGalleryClick={() => galleryInputRef.current?.click()}
+                    onFileClick={() => fileInputRef.current?.click()}
+                  />
+                )}
+              </div>
             )}
+
+            {/* Caption / content */}
             <textarea
               value={content}
               onChange={e => setContent(e.target.value)}
               placeholder="Add a caption..."
-              className="w-full bg-transparent text-sm placeholder:text-muted-foreground/60 outline-none resize-none"
+              className="w-full bg-transparent text-sm placeholder:text-muted-foreground/60 outline-none resize-none min-h-[60px]"
               aria-label="Image caption"
             />
           </div>
@@ -449,12 +518,11 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
 
         {/* Reminder */}
         <div className="mt-3 flex items-center gap-2">
-          <Bell className="w-3.5 h-3.5 text-muted-foreground" />
           <input
             type="datetime-local"
             value={reminderAt}
             onChange={e => setReminderAt(e.target.value)}
-            className="text-xs bg-transparent text-muted-foreground outline-none"
+            className="text-xs bg-transparent outline-none text-muted-foreground"
             aria-label="Set reminder"
           />
         </div>
@@ -462,9 +530,14 @@ export function NoteModal({ note, isOpen, onClose, onSave, onTrash, onArchive, o
         {/* Selected labels display */}
         {selectedLabels.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
-            {selectedLabels.map(l => (
-              <span key={l} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                {l}
+            {selectedLabels.map(label => (
+              <span
+                key={label}
+                className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary cursor-pointer"
+                onClick={() => setSelectedLabels(prev => prev.filter(l => l !== label))}
+                aria-label={`Remove label ${label}`}
+              >
+                {label} ×
               </span>
             ))}
           </div>

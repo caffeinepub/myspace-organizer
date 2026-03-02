@@ -1,46 +1,47 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Add image upload and camera capture to Routine section",
+  "title": "Notes Image Aspect Ratio Fix & Routine File Upload",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Add image attachment feature to routine items with gallery upload and camera capture options, storing images in IndexedDB and displaying thumbnails on routine cards",
+      "summary": "Remove fixed aspect ratio constraints from note image containers to display images at their natural dimensions while maintaining responsive behavior",
       "acceptanceCriteria": [
-        "Routine item add/edit modal or inline UI shows two distinct buttons/options: one for gallery upload and one for camera capture.",
-        "Gallery upload uses an <input type=\"file\" accept=\"image/*\"> element.",
-        "Camera capture uses an <input type=\"file\" accept=\"image/*\" capture=\"environment\"> element.",
-        "Selected image is compressed (using existing compressImage utility) and saved to IndexedDB via useImageStorage.",
-        "A thumbnail preview of the attached image is visible on the routine item card after saving.",
-        "The attached image can be removed/replaced.",
-        "All existing routine features (drag-to-reorder, time/icon fields, speech recognition, import/export, weekday/weekend/today tabs, complete toggle) remain fully functional and unchanged.",
-        "No backend changes are made."
+        "Images in the Notes list view (NoteCard) display at their natural width/height proportions without letterboxing or cropping",
+        "Images in the NoteModal display at their natural proportions",
+        "No fixed aspect-ratio CSS classes remain on note image containers",
+        "Layout remains responsive and does not break on mobile viewports",
+        "All other NoteCard and NoteModal styles, layout, and functionality are unchanged"
       ],
       "file_operations": [
         {
-          "path": "frontend/src/db/schema.ts",
+          "path": "frontend/src/components/notes/NoteCard.tsx",
           "operation": "modify",
-          "description": "Add an optional imageId field (string or undefined) to the RoutineItem interface to store the IndexedDB imageBlobs reference for attached images. Do not modify any other fields in RoutineItem or RoutineProfile."
+          "description": "Remove any fixed aspect ratio CSS classes (e.g., aspect-video, aspect-square) from image containers in the image note type rendering. Update the image container to allow natural image dimensions by removing aspect ratio constraints while preserving responsive width and other existing styles. Ensure the image element and its parent container adapt to the actual image proportions without forcing a fixed aspect ratio."
         },
+        {
+          "path": "frontend/src/components/notes/NoteModal.tsx",
+          "operation": "modify",
+          "description": "Remove any fixed aspect ratio CSS classes from image containers in the modal's image note type rendering. Update the image preview area to display images at their natural proportions by removing aspect ratio constraints while maintaining responsive behavior and existing modal layout. Ensure images scale appropriately without letterboxing or cropping."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Integrate ImageUploadPicker component into RoutinesPage with identical UI, styling, and behavior as the Notes section implementation",
+      "acceptanceCriteria": [
+        "RoutinesPage displays the same image upload trigger (camera/gallery/file picker) as the Notes section",
+        "All three upload options (camera, gallery, file) are present and functional in the routine section",
+        "Outside-click and Escape key close the upload dropdown in routines, matching Notes behavior",
+        "Uploaded images are stored and displayed within routine items using the same logic as notes image storage",
+        "Existing routine functionality (drag-and-drop, add/edit/delete items, weekday/weekend/today tabs, import/export) remains completely unchanged",
+        "Visual styling of the upload component in routines is pixel-identical to the notes upload component"
+      ],
+      "file_operations": [
         {
           "path": "frontend/src/pages/RoutinesPage.tsx",
           "operation": "modify",
-          "description": "Add image upload UI to the routine item add/edit modal or inline form. Include two distinct input options: (1) a button/input for gallery upload using <input type=\"file\" accept=\"image/*\"> and (2) a button/input for camera capture using <input type=\"file\" accept=\"image/*\" capture=\"environment\">. When an image is selected, compress it using the existing compressImage utility from imageCompression.ts, save it via useImageStorage hook, and store the returned imageId in the routine item. Display a thumbnail preview of the attached image in the modal/form. Add a remove/replace button for the image. On routine item cards, display a thumbnail preview if imageId is present by retrieving the image URL via useImageStorage. Ensure all existing functionality (drag-to-reorder, time/icon fields, speech recognition, import/export, tab switching, complete toggle) remains unchanged. Use the existing useImageStorage hook for all image storage operations. Verify the useImageStorage hook's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useRoutines.ts",
-          "operation": "modify",
-          "description": "Update the addRoutine and updateRoutine functions to handle the new optional imageId field in RoutineItem when saving to IndexedDB. When deleting a routine item, check if it has an imageId and call deleteImage from useImageStorage to clean up the orphaned image blob. Do not modify any other routine management logic, including reorder, toggle-complete, or profile switching functionality."
-        },
-        {
-          "path": "frontend/src/utils/routineExport.ts",
-          "operation": "modify",
-          "description": "Update the export functions (TXT, DOC, JSON) to include the imageId field when exporting routine items. For JSON export, include imageId as-is. For TXT and DOC exports, optionally mention if an image is attached (e.g., '[Image attached]') without embedding the actual image data."
-        },
-        {
-          "path": "frontend/src/utils/routineImport.ts",
-          "operation": "modify",
-          "description": "Update the import parsers (JSON, TXT, DOC) to handle the optional imageId field when importing routine items. For JSON imports, preserve the imageId if present (note: the actual image blob must already exist in IndexedDB for the reference to be valid). For TXT and DOC imports, imageId will typically be undefined since image data is not embedded in those formats."
+          "description": "Integrate the ImageUploadPicker component into the routine item creation/editing flow by copying the exact implementation pattern from NotesPage/NoteModal. Add the same camera/gallery/file upload trigger button with identical styling, wire up the three upload options (camera, gallery, file), implement the same outside-click and Escape key dismissal behavior, and handle uploaded images using the blob-storage component's ExternalBlob class to store image references in routine items. Use the camera component's useCamera hook for camera functionality. Verify both the blob-storage and camera component usage instructions before implementing. Ensure the upload UI matches the notes section pixel-perfectly while preserving all existing routine functionality including drag-and-drop ordering, weekday/weekend/today tabs, and import/export features."
         }
       ]
     }

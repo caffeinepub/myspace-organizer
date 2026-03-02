@@ -30,7 +30,6 @@ export interface RoutineItem {
   duration?: number; // minutes
   completed: boolean;
   order: number;
-  imageId?: string; // optional reference to a stored image in routineImagesById localStorage
 }
 
 export interface RoutineProfile {

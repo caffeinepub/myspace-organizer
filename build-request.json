@@ -1,44 +1,66 @@
 {
   "kind": "build_request",
-  "title": "Add image upload and camera capture to Routine section",
+  "title": "Notes Image Aspect Ratio Fix & Routine File Upload",
   "projectName": "MyOrganizer Pro",
   "priority": "normal",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "In the Routines page (RoutinesPage.tsx), add an image attachment feature to routine items. Each routine item should support attaching an image via two input options: (1) gallery/file upload (accept=\"image/*\") and (2) camera capture (accept=\"image/*\" capture=\"environment\"). Display a thumbnail preview of the attached image on the routine item card. Store the image using the existing useImageStorage hook (IndexedDB imageBlobs table). Do not modify any existing routine item fields, drag-to-reorder, add/edit/delete, speech recognition, import/export, or tab-switching functionality.",
+      "text": "In the Notes view, remove any fixed aspect ratio constraints from image containers in NoteCard and NoteModal so that images display at their natural dimensions. The image container should resize to fit the actual image proportions, content should wrap naturally, and responsive behavior must be preserved. No fixed aspect ratio classes (e.g., aspect-video, aspect-square) should be applied to note image elements.",
       "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-20"
+          "msg-4"
         ],
         "quotes": [
-          "In routine section add give image upload along with camera pic upload",
-          "Note don't change anything in existing"
+          "automatically adjust the image container's aspect ratio to perfectly fit each image's natural dimensions while maintaining responsive behavior",
+          "no fixed aspect ratios"
         ]
       },
       "acceptanceCriteria": [
-        "Routine item add/edit modal or inline UI shows two distinct buttons/options: one for gallery upload and one for camera capture.",
-        "Gallery upload uses an <input type=\"file\" accept=\"image/*\"> element.",
-        "Camera capture uses an <input type=\"file\" accept=\"image/*\" capture=\"environment\"> element.",
-        "Selected image is compressed (using existing compressImage utility) and saved to IndexedDB via useImageStorage.",
-        "A thumbnail preview of the attached image is visible on the routine item card after saving.",
-        "The attached image can be removed/replaced.",
-        "All existing routine features (drag-to-reorder, time/icon fields, speech recognition, import/export, weekday/weekend/today tabs, complete toggle) remain fully functional and unchanged.",
-        "No backend changes are made."
+        "Images in the Notes list view (NoteCard) display at their natural width/height proportions without letterboxing or cropping",
+        "Images in the NoteModal display at their natural proportions",
+        "No fixed aspect-ratio CSS classes remain on note image containers",
+        "Layout remains responsive and does not break on mobile viewports",
+        "All other NoteCard and NoteModal styles, layout, and functionality are unchanged"
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "text": "Add a file upload feature to RoutinesPage by integrating the existing ImageUploadPicker component (frontend/src/components/common/ImageUploadPicker.tsx) identically to how it is used in the Notes section. The UI, styling, trigger button appearance, dropdown options (camera, gallery, file), outside-click/Escape dismissal behavior, and image handling logic must be copied exactly from the Notes implementation into the routine item flow. Do not alter any existing routine functionality, drag-and-drop, or other controls.",
+      "target": "frontend",
+      "source": {
+        "messageIds": [
+          "msg-4"
+        ],
+        "quotes": [
+          "Add a file upload feature to the routine section using the exact same UI, styling, behavior, and functionality as the existing notes file upload",
+          "Copy the complete file upload component from notes and integrate it identically into routines"
+        ]
+      },
+      "acceptanceCriteria": [
+        "RoutinesPage displays the same image upload trigger (camera/gallery/file picker) as the Notes section",
+        "All three upload options (camera, gallery, file) are present and functional in the routine section",
+        "Outside-click and Escape key close the upload dropdown in routines, matching Notes behavior",
+        "Uploaded images are stored and displayed within routine items using the same logic as notes image storage",
+        "Existing routine functionality (drag-and-drop, add/edit/delete items, weekday/weekend/today tabs, import/export) remains completely unchanged",
+        "Visual styling of the upload component in routines is pixel-identical to the notes upload component"
       ]
     }
   ],
   "constraints": [
-    "Do not change any existing routine item fields, drag-to-reorder logic, tab navigation, speech recognition, import/export, or any other existing functionality in RoutinesPage.tsx or useRoutines.ts.",
-    "Use the existing useImageStorage hook for storing and retrieving images.",
-    "Use the existing compressImage utility from imageCompression.ts for compressing uploaded images.",
-    "Do not modify any immutable frontend paths."
+    "Do not modify any existing functionality, styles, or components outside of the two specified changes",
+    "Do not alter headers, footers, navigation, bottom tab bar, or sidebar",
+    "Maintain all existing responsive breakpoints and mobile layouts",
+    "Do not change backend logic or data models",
+    "Immutable frontend paths (useInternetIdentity, useActor, main.tsx, components/ui) must not be edited"
   ],
   "nonGoals": [
-    "Adding image upload to Notes or Records pages (already exists).",
-    "Changing the backend schema or Motoko actor.",
-    "Modifying any existing UI layout beyond adding the image upload controls."
+    "Adding new note types or routine item types",
+    "Changing any styling outside of image container aspect ratio in Notes",
+    "Modifying the ImageUploadPicker component itself",
+    "Any backend changes",
+    "Changes to any page other than NotesPage/NoteCard/NoteModal and RoutinesPage"
   ],
   "imageRequirements": {
     "required": [],

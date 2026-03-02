@@ -1,16 +1,24 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "New project",
+  "summary": "Web app with Notes view and Routine tab features. Implementing: (1) Notes View image aspect ratio fix to display images at natural dimensions, (2) Routine tab file upload copied from existing Notes file upload component.",
   "architectural_notes": [],
   "known_issues": [],
-  "isFixRequest": false,
+  "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-in-the-routines-page-routinespage-tsx-add-an-image-attachment-feature-to-routine-items-each-routine-item-should-support-attaching-an-image-via-two-input-options-1-gallery-file-upload-accept-image-and-2-camera-capture-accept-image-capture-environment-display-a-thumbnail-preview-of-the-attached-image-on-the-routine-item-card-store-the-image-using-the-existing-useimagestorage-hook-indexeddb-imageblobs-table-do-not-modify-any-existing-routine-item-fields-drag-to-reorder-add-edit-delete-speech-recognition-import-export-or-tab-switching-functionality",
-      "title": "In the Routines page (RoutinesPage.tsx), add an image attachment feature to routine items. Each routine item should support attaching an image via two input options: (1) gallery/file upload (accept=\"image/*\") and (2) camera capture (accept=\"image/*\" capture=\"environment\"). Display a thumbnail preview of the attached image on the routine item card. Store the image using the existing useImageStorage hook (IndexedDB imageBlobs table). Do not modify any existing routine item fields, drag-to-reorder, add/edit/delete, speech recognition, import/export, or tab-switching functionality.",
+      "id": "feature-in-the-notes-view-remove-any-fixed-aspect-ratio-constraints-from-image-containers-in-notecard-and-notemodal-so-that-images-display-at-their-natural-dimensions-the-image-container-should-resize-to-fit-the-actual-image-proportions-content-should-wrap-naturally-and-responsive-behavior-must-be-preserved-no-fixed-aspect-ratio-classes-e-g-aspect-video-aspect-square-should-be-applied-to-note-image-elements",
+      "title": "In the Notes view, remove any fixed aspect ratio constraints from image containers in NoteCard and NoteModal so that images display at their natural dimensions. The image container should resize to fit the actual image proportions, content should wrap naturally, and responsive behavior must be preserved. No fixed aspect ratio classes (e.g., aspect-video, aspect-square) should be applied to note image elements.",
       "reqIds": [
         "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-file-upload-feature-to-routinespage-by-integrating-the-existing-imageuploadpicker-component-frontend-src-components-common-imageuploadpicker-tsx-identically-to-how-it-is-used-in-the-notes-section-the-ui-styling-trigger-button-appearance-dropdown-options-camera-gallery-file-outside-click-escape-dismissal-behavior-and-image-handling-logic-must-be-copied-exactly-from-the-notes-implementation-into-the-routine-item-flow-do-not-alter-any-existing-routine-functionality-drag-and-drop-or-other-controls",
+      "title": "Add a file upload feature to RoutinesPage by integrating the existing ImageUploadPicker component (frontend/src/components/common/ImageUploadPicker.tsx) identically to how it is used in the Notes section. The UI, styling, trigger button appearance, dropdown options (camera, gallery, file), outside-click/Escape dismissal behavior, and image handling logic must be copied exactly from the Notes implementation into the routine item flow. Do not alter any existing routine functionality, drag-and-drop, or other controls.",
+      "reqIds": [
+        "REQ-2"
       ],
       "version": 1
     }
@@ -18,11 +26,18 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "In the routine section, add image upload option alongside existing camera picture upload, without changing existing functionality",
+      "summary": "Notes View image fix: display images at natural dimensions without fixed aspect ratios",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Routine tab file upload: copy exact file upload component from Notes section",
       "reqIds": [],
       "status": "pending"
     }
   ],
+  "gameProjectType": "none",
   "projectName": "MyOrganizer Pro",
   "clarification_mode": "instant",
   "clarification_rounds": 0

@@ -2,24 +2,43 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-in-the-routines-page-routinespage-tsx-add-an-image-attachment-feature-to-routine-items-each-routine-item-should-support-attaching-an-image-via-two-input-options-1-gallery-file-upload-accept-image-and-2-camera-capture-accept-image-capture-environment-display-a-thumbnail-preview-of-the-attached-image-on-the-routine-item-card-store-the-image-using-the-existing-useimagestorage-hook-indexeddb-imageblobs-table-do-not-modify-any-existing-routine-item-fields-drag-to-reorder-add-edit-delete-speech-recognition-import-export-or-tab-switching-functionality",
-      "featureTitle": "In the Routines page (RoutinesPage.tsx), add an image attachment feature to routine items. Each routine item should support attaching an image via two input options: (1) gallery/file upload (accept=\"image/*\") and (2) camera capture (accept=\"image/*\" capture=\"environment\"). Display a thumbnail preview of the attached image on the routine item card. Store the image using the existing useImageStorage hook (IndexedDB imageBlobs table). Do not modify any existing routine item fields, drag-to-reorder, add/edit/delete, speech recognition, import/export, or tab-switching functionality.",
+      "featureId": "feature-in-the-notes-view-remove-any-fixed-aspect-ratio-constraints-from-image-containers-in-notecard-and-notemodal-so-that-images-display-at-their-natural-dimensions-the-image-container-should-resize-to-fit-the-actual-image-proportions-content-should-wrap-naturally-and-responsive-behavior-must-be-preserved-no-fixed-aspect-ratio-classes-e-g-aspect-video-aspect-square-should-be-applied-to-note-image-elements",
+      "featureTitle": "In the Notes view, remove any fixed aspect ratio constraints from image containers in NoteCard and NoteModal so that images display at their natural dimensions. The image container should resize to fit the actual image proportions, content should wrap naturally, and responsive behavior must be preserved. No fixed aspect ratio classes (e.g., aspect-video, aspect-square) should be applied to note image elements.",
       "files": [
-        "frontend/src/db/schema.ts",
-        "frontend/src/hooks/useRoutines.ts",
-        "frontend/src/pages/RoutinesPage.tsx",
-        "frontend/src/utils/routineExport.ts",
-        "frontend/src/utils/routineImport.ts"
+        "frontend/src/components/notes/NoteCard.tsx",
+        "frontend/src/components/notes/NoteModal.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
         "shadcn-ui@1.0.0",
         "build-template-react@1.0.0",
         "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0"
+        "github-export-icp-cli@1.0.0",
+        "blob-storage@4.0.0",
+        "camera@1.0.0"
       ],
       "testIds": [
         "REQ-1"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-a-file-upload-feature-to-routinespage-by-integrating-the-existing-imageuploadpicker-component-frontend-src-components-common-imageuploadpicker-tsx-identically-to-how-it-is-used-in-the-notes-section-the-ui-styling-trigger-button-appearance-dropdown-options-camera-gallery-file-outside-click-escape-dismissal-behavior-and-image-handling-logic-must-be-copied-exactly-from-the-notes-implementation-into-the-routine-item-flow-do-not-alter-any-existing-routine-functionality-drag-and-drop-or-other-controls",
+      "featureTitle": "Add a file upload feature to RoutinesPage by integrating the existing ImageUploadPicker component (frontend/src/components/common/ImageUploadPicker.tsx) identically to how it is used in the Notes section. The UI, styling, trigger button appearance, dropdown options (camera, gallery, file), outside-click/Escape dismissal behavior, and image handling logic must be copied exactly from the Notes implementation into the routine item flow. Do not alter any existing routine functionality, drag-and-drop, or other controls.",
+      "files": [
+        "frontend/src/pages/RoutinesPage.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "blob-storage@4.0.0",
+        "camera@1.0.0"
+      ],
+      "testIds": [
+        "REQ-2"
       ],
       "confidence": "high"
     }
