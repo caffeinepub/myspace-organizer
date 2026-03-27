@@ -12,6 +12,7 @@ import {
   FileJson,
   FileText,
   FileType,
+  Plus,
   Search,
   Tag,
   Trash2,
@@ -202,6 +203,20 @@ export function NotesPage({
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold">Notes</h1>
           <div className="flex items-center gap-1">
+            {/* New Note button */}
+            {view === "all" && (
+              <button
+                type="button"
+                onClick={() => handleQuickAdd("text")}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-xs font-medium"
+                aria-label="Add new note"
+                data-ocid="notes.primary_button"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                New Note
+              </button>
+            )}
+
             {/* Import */}
             <button
               type="button"

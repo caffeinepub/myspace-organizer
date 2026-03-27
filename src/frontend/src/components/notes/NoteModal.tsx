@@ -1,7 +1,6 @@
 import { format } from "date-fns";
 import {
   Archive,
-  Download,
   FileDown,
   Mic,
   MicOff,
@@ -541,7 +540,7 @@ export function NoteModal({
           </div>
 
           {/* Scrollable content body */}
-          <div className="px-4 pb-4 flex flex-col gap-3">
+          <div className="px-5 pb-6 flex flex-col gap-3">
             {/* Color picker */}
             {showColorPicker && (
               <div className="flex flex-wrap gap-2 p-2 bg-card/80 rounded-lg">
@@ -605,7 +604,7 @@ export function NoteModal({
               onChange={(e) => setTitle(e.target.value)}
               onFocus={() => setActiveField("title")}
               placeholder="Title"
-              className="w-full bg-transparent text-base font-semibold placeholder:text-muted-foreground/60 outline-none"
+              className="w-full bg-transparent text-lg font-semibold placeholder:text-muted-foreground/60 outline-none"
               aria-label="Note title"
             />
 
@@ -634,7 +633,7 @@ export function NoteModal({
                   }}
                   onFocus={() => setActiveField("content")}
                   placeholder="Take a note..."
-                  className="w-full bg-transparent text-sm placeholder:text-muted-foreground/60 outline-none resize-none min-h-[160px] pr-8"
+                  className="w-full bg-transparent text-base placeholder:text-muted-foreground/60 outline-none resize-none min-h-[260px] pr-8"
                   aria-label="Note content"
                 />
                 {/* Mic button — bottom-right of textarea */}
@@ -941,8 +940,8 @@ export function NoteModal({
               </div>
             )}
 
-            {/* Add attachment button + picker */}
-            <div className="relative inline-block">
+            {/* Add attachment button + inline picker (no absolute positioning) */}
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setShowAttachPicker((v) => !v)}
@@ -955,22 +954,41 @@ export function NoteModal({
                 Add Attachment
               </button>
               {showAttachPicker && (
-                <ImageUploadPicker
-                  isOpen={showAttachPicker}
-                  onClose={() => setShowAttachPicker(false)}
-                  onCameraClick={() => {
-                    setShowAttachPicker(false);
-                    attachCameraRef.current?.click();
-                  }}
-                  onGalleryClick={() => {
-                    setShowAttachPicker(false);
-                    attachGalleryRef.current?.click();
-                  }}
-                  onFileClick={() => {
-                    setShowAttachPicker(false);
-                    attachFileRef.current?.click();
-                  }}
-                />
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAttachPicker(false);
+                      attachCameraRef.current?.click();
+                    }}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                    aria-label="Open camera"
+                  >
+                    <span>📷</span> Camera
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAttachPicker(false);
+                      attachGalleryRef.current?.click();
+                    }}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                    aria-label="Select from gallery"
+                  >
+                    <span>🖼</span> Gallery
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAttachPicker(false);
+                      attachFileRef.current?.click();
+                    }}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                    aria-label="Upload files"
+                  >
+                    <span>📁</span> Files
+                  </button>
+                </>
               )}
             </div>
 

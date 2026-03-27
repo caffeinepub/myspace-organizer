@@ -1,6 +1,7 @@
-import { Archive, MoreVertical, Pin, Trash2 } from "lucide-react";
+import { Archive, Pin, Trash2 } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { db } from "../../db/db";
 import type { Note } from "../../db/schema";
 
 interface NoteCardProps {
@@ -26,32 +27,42 @@ export function NoteCard({
   showActions = true,
   imageUrl,
 }: NoteCardProps) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [thumbUrl, setThumbUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    if (note.type === "image" && note.imageRefs && note.imageRefs.length > 0) {
+      db.imageBlobs.toArray().then((blobs) => {
+        const rec = blobs.find(
+          (b) => b.key === note.imageRefs[0] && b.type === "thumbnail",
+        );
+        if (rec) {
+          objectUrl = URL.createObjectURL(rec.blob);
+          setThumbUrl(objectUrl);
+        }
+      });
+    }
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [note.type, note.imageRefs]);
 
   const handleCardClick = () => {
     onClick(note);
   };
 
-  const handleMenuToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setMenuOpen((prev) => !prev);
-  };
-
   const handlePin = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setMenuOpen(false);
     if (note.id) onPin(note.id);
   };
 
   const handleArchive = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setMenuOpen(false);
     if (note.id) onArchive(note.id);
   };
 
   const handleTrash = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setMenuOpen(false);
     if (note.id) onTrash(note.id);
   };
 
@@ -124,6 +135,8 @@ export function NoteCard({
     return null;
   };
 
+  const displayImage = thumbUrl || imageUrl;
+
   return (
     // biome-ignore lint/a11y/useSemanticElements: note card uses div to allow nested interactive elements (menu, checkbox) which are invalid inside <button>
     <div
@@ -133,7 +146,10 @@ export function NoteCard({
         ${note.pinned ? "shadow-md" : ""}
       `}
       onClick={handleCardClick}
-      style={{ background: "var(--card)" }}
+      style={{
+        background:
+          note.color && note.color !== "default" ? note.color : "var(--card)",
+      }}
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter") onClick(note);
@@ -161,16 +177,16 @@ export function NoteCard({
 
       {/* Pin indicator */}
       {note.pinned && (
-        <div className="absolute top-2 right-8 z-10">
+        <div className="absolute top-2 right-2 z-10">
           <Pin className="w-3 h-3 text-primary fill-primary" />
         </div>
       )}
 
       {/* Image — compact thumbnail height for summary card */}
-      {imageUrl && (
+      {displayImage && (
         <div className="w-full h-32 overflow-hidden rounded-t-xl bg-muted/30">
           <img
-            src={imageUrl}
+            src={displayImage}
             alt={note.title || "Note image"}
             className="w-full h-full object-cover block"
             loading="lazy"
@@ -186,7 +202,7 @@ export function NoteCard({
           </h3>
         )}
 
-        {/* Full content — no line-clamp, fully expanded */}
+        {/* Content summary — max 3 lines */}
         {renderContent()}
 
         {/* Labels */}
@@ -214,65 +230,46 @@ export function NoteCard({
               : ""}
           </span>
 
-          {/* Context menu */}
+          {/* Inline action buttons — always visible */}
           {showActions && (
-            <div className="relative">
+            <div className="flex items-center gap-0.5">
               <button
                 type="button"
-                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-muted"
-                onClick={handleMenuToggle}
-                aria-label="Note actions"
-                aria-haspopup="true"
-                aria-expanded={menuOpen}
+                className="w-6 h-6 flex items-center justify-center rounded opacity-70 hover:opacity-100 hover:bg-muted transition-all"
+                onClick={handlePin}
+                aria-label={note.pinned ? "Unpin note" : "Pin note"}
+                title={note.pinned ? "Unpin" : "Pin"}
               >
-                <MoreVertical className="w-3.5 h-3.5 text-muted-foreground" />
+                <Pin
+                  className={`w-3.5 h-3.5 ${
+                    note.pinned
+                      ? "text-primary fill-primary"
+                      : "text-muted-foreground"
+                  }`}
+                />
               </button>
-
-              {menuOpen && (
-                <>
-                  {/* Backdrop — dismiss on click; keyboard users use Escape via parent handler */}
-                  <div
-                    className="fixed inset-0 z-20"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setMenuOpen(false);
-                    }}
-                    onKeyDown={(e) => e.key === "Escape" && setMenuOpen(false)}
-                  />
-                  <div
-                    className="absolute right-0 bottom-full mb-1 z-30 bg-popover border border-border rounded-lg shadow-lg py-1 min-w-[130px]"
-                    role="menu"
-                  >
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors text-left"
-                      onClick={handlePin}
-                      role="menuitem"
-                    >
-                      <Pin className="w-3 h-3" />
-                      {note.pinned ? "Unpin" : "Pin"}
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors text-left"
-                      onClick={handleArchive}
-                      role="menuitem"
-                    >
-                      <Archive className="w-3 h-3" />
-                      {note.archived ? "Unarchive" : "Archive"}
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted transition-colors text-left text-destructive"
-                      onClick={handleTrash}
-                      role="menuitem"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      {note.trashed ? "Delete" : "Trash"}
-                    </button>
-                  </div>
-                </>
-              )}
+              <button
+                type="button"
+                className="w-6 h-6 flex items-center justify-center rounded opacity-70 hover:opacity-100 hover:bg-muted transition-all"
+                onClick={handleArchive}
+                aria-label={note.archived ? "Unarchive note" : "Archive note"}
+                title={note.archived ? "Unarchive" : "Archive"}
+              >
+                <Archive className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+              <button
+                type="button"
+                className="w-6 h-6 flex items-center justify-center rounded opacity-70 hover:opacity-100 hover:bg-muted transition-all"
+                onClick={handleTrash}
+                aria-label={
+                  note.trashed
+                    ? "Delete note permanently"
+                    : "Move note to trash"
+                }
+                title={note.trashed ? "Delete" : "Trash"}
+              >
+                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+              </button>
             </div>
           )}
         </div>

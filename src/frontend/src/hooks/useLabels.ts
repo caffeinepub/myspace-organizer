@@ -3,6 +3,16 @@ import { db } from "../db/db";
 import type { Label } from "../db/schema";
 import { showErrorToast, showSuccessToast } from "../store/toastStore";
 
+const DEFAULT_LABELS = [
+  "Work",
+  "Personal",
+  "Ideas",
+  "Fitness",
+  "Health",
+  "Tech",
+  "Devotional",
+];
+
 export function useLabels() {
   const [labels, setLabels] = useState<Label[]>([]);
   const [loading, setLoading] = useState(true);
@@ -10,7 +20,36 @@ export function useLabels() {
   const load = useCallback(async () => {
     try {
       const all = await db.labels.toArray();
-      setLabels(all);
+
+      // Step 1: Remove duplicates — keep only the first occurrence of each name (case-insensitive)
+      const seen = new Set<string>();
+      for (const label of all) {
+        const key = label.name.toLowerCase();
+        if (seen.has(key)) {
+          // duplicate — delete it
+          if (label.id !== undefined) await db.labels.delete(label.id);
+        } else {
+          seen.add(key);
+        }
+      }
+
+      // Step 2: Refresh after dedup
+      const deduped = await db.labels.toArray();
+      const existingNames = deduped.map((l) => l.name.toLowerCase());
+
+      // Step 3: Add any missing DEFAULT_LABELS
+      for (const name of DEFAULT_LABELS) {
+        if (!existingNames.includes(name.toLowerCase())) {
+          await db.labels.add({
+            name,
+            color: "#6366f1",
+            createdAt: Date.now(),
+          });
+        }
+      }
+
+      const final = await db.labels.toArray();
+      setLabels(final);
     } catch {
       showErrorToast("Failed to load labels");
     } finally {
@@ -64,11 +103,6 @@ export function useLabels() {
     }
   }, []);
 
-  /**
-   * Deletes a label by numeric id.
-   * Accepts an optional callback to reassign notes that used this label
-   * (pass bulkReassignLabel from useNotes).
-   */
   const deleteLabel = useCallback(
     async (id: number, onReassign?: (labelName: string) => Promise<void>) => {
       try {
