@@ -457,12 +457,13 @@ export function NoteModal({
       <Modal isOpen={isOpen} onClose={handleSave} size="2xl" showClose={false}>
         {/* Outer wrapper fills the modal padding area and applies note color */}
         <div style={bgStyle} className="bg-card rounded-xl -m-4">
-          {/* Sticky header toolbar */}
+          {/* Sticky header toolbar — z-30 ensures it always renders above image content on mobile */}
           <div
-            className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-y-2 px-4 pt-4 pb-3 rounded-t-xl bg-card"
+            className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-y-2 px-4 pt-4 pb-3 rounded-t-xl bg-card backdrop-blur-sm shadow-sm min-h-[52px]"
             style={bgStyle}
           >
-            <div className="flex flex-shrink-0 items-center gap-1">
+            {/* Left group: Pin, Color, Label, Archive, Export — wraps on narrow screens */}
+            <div className="flex flex-shrink-0 flex-wrap items-center gap-1 min-w-0">
               <button
                 type="button"
                 onClick={() => {
@@ -516,6 +517,7 @@ export function NoteModal({
                 <FileDown className="w-4 h-4" />
               </button>
             </div>
+            {/* Right group: Trash + Done — always flex-shrink-0 so they never disappear */}
             <div className="flex flex-shrink-0 items-center gap-1">
               <button
                 type="button"
