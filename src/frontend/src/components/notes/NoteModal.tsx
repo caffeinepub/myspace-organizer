@@ -456,13 +456,13 @@ export function NoteModal({
     <>
       <Modal isOpen={isOpen} onClose={handleSave} size="2xl" showClose={false}>
         {/* Outer wrapper fills the modal padding area and applies note color */}
-        <div style={bgStyle} className="rounded-xl -m-4">
+        <div style={bgStyle} className="bg-card rounded-xl -m-4">
           {/* Sticky header toolbar */}
           <div
-            className="sticky top-0 z-10 flex items-center justify-between px-4 pt-4 pb-3 rounded-t-xl"
+            className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-y-2 px-4 pt-4 pb-3 rounded-t-xl bg-card"
             style={bgStyle}
           >
-            <div className="flex items-center gap-1">
+            <div className="flex flex-shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={() => {
@@ -516,7 +516,7 @@ export function NoteModal({
                 <FileDown className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-shrink-0 items-center gap-1">
               <button
                 type="button"
                 onClick={() => {
