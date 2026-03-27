@@ -47,8 +47,11 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const [error, setError] = useState<string | null>(null);
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  // Tracks the highest result index already processed as final, to prevent
+  // mobile browsers from replaying old final results and causing duplication.
+  const processedUpToRef = useRef(0);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: SpeechRecognitionAPI is stable (set once at module level, not reactive)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: SpeechRecognitionAPI is stable
   useEffect(() => {
     if (!isSupported || !SpeechRecognitionAPI) return;
 
@@ -64,7 +67,12 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          finalText += result[0].transcript;
+          // Only process each result index once — mobile browsers sometimes
+          // re-fire onresult with resultIndex=0 replaying all prior finals.
+          if (i >= processedUpToRef.current) {
+            finalText += result[0].transcript;
+            processedUpToRef.current = i + 1;
+          }
         } else {
           interimText += result[0].transcript;
         }
@@ -99,6 +107,8 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     setError(null);
     setTranscript("");
     setInterimTranscript("");
+    // Reset processed index so a fresh session starts from 0
+    processedUpToRef.current = 0;
     try {
       recognitionRef.current.start();
       setIsListening(true);
@@ -117,6 +127,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const resetTranscript = useCallback(() => {
     setTranscript("");
     setInterimTranscript("");
+    processedUpToRef.current = 0;
   }, []);
 
   return {
