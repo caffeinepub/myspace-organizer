@@ -136,13 +136,17 @@ export default function RecordsPage() {
     resetTranscript,
   } = useSpeechRecognition();
 
-  // Append speech transcript to newContent
+  // Track last appended transcript position to avoid duplicating words
+  const lastTranscriptRef = useRef("");
+
+  // Append only the NEW portion of the transcript to avoid duplication
   React.useEffect(() => {
-    if (transcript) {
-      setNewContent((prev) => prev + (prev ? " " : "") + transcript);
-      resetTranscript();
-    }
-  }, [transcript, resetTranscript]);
+    if (!transcript) return;
+    const newPart = transcript.slice(lastTranscriptRef.current.length);
+    if (!newPart) return;
+    lastTranscriptRef.current = transcript;
+    setNewContent((prev) => prev + (prev ? " " : "") + newPart.trim());
+  }, [transcript]);
 
   // ── image helpers ───────────────────────────────────────────────────────────
   const handleAddImageChange = useCallback(
@@ -206,6 +210,7 @@ export default function RecordsPage() {
     setShowAdd(false);
     if (isListening) stopListening();
     resetTranscript();
+    lastTranscriptRef.current = "";
   };
 
   // ── submit edit ─────────────────────────────────────────────────────────────
@@ -402,7 +407,15 @@ export default function RecordsPage() {
             {speechSupported && (
               <button
                 type="button"
-                onClick={isListening ? stopListening : startListening}
+                onClick={() => {
+                  if (isListening) {
+                    stopListening();
+                  } else {
+                    resetTranscript();
+                    lastTranscriptRef.current = "";
+                    startListening();
+                  }
+                }}
                 className={`absolute bottom-2 right-2 p-1.5 rounded-lg transition-colors ${isListening ? "bg-red-100 text-red-600" : "bg-muted text-muted-foreground hover:text-foreground"}`}
                 title={isListening ? "Stop dictation" : "Dictate"}
               >
@@ -469,6 +482,7 @@ export default function RecordsPage() {
                 setAddImage(null);
                 if (isListening) stopListening();
                 resetTranscript();
+                lastTranscriptRef.current = "";
               }}
               className="px-4 py-1.5 rounded-lg border border-border bg-background text-sm text-foreground hover:bg-muted transition-colors"
             >

@@ -362,16 +362,20 @@ export default function RoutinesPage() {
     resetTranscript,
   } = useSpeechRecognition();
 
-  // Append finalized transcript to title field
+  // Track last appended transcript position to avoid duplicating words
+  const lastTranscriptRef = useRef("");
+
+  // Append only the NEW portion of the transcript to the title field
   React.useEffect(() => {
-    if (transcript) {
-      setFormTitle((prev) => {
-        const separator = prev && !prev.endsWith(" ") ? " " : "";
-        return prev + separator + transcript;
-      });
-      resetTranscript();
-    }
-  }, [transcript, resetTranscript]);
+    if (!transcript) return;
+    const newPart = transcript.slice(lastTranscriptRef.current.length);
+    if (!newPart) return;
+    lastTranscriptRef.current = transcript;
+    setFormTitle((prev) => {
+      const separator = prev && !prev.endsWith(" ") ? " " : "";
+      return prev + separator + newPart.trim();
+    });
+  }, [transcript]);
 
   // Stop listening when form closes
   React.useEffect(() => {
@@ -406,6 +410,7 @@ export default function RoutinesPage() {
     setFormAttachments([]);
     setShowAttachPicker(false);
     resetTranscript();
+    lastTranscriptRef.current = "";
     setShowForm(true);
   };
 
@@ -437,6 +442,7 @@ export default function RoutinesPage() {
       setFormAttachments([]);
     }
     resetTranscript();
+    lastTranscriptRef.current = "";
     setShowForm(true);
   };
 
@@ -549,6 +555,8 @@ export default function RoutinesPage() {
     if (isListening) {
       stopListening();
     } else {
+      resetTranscript();
+      lastTranscriptRef.current = "";
       startListening();
     }
   };
