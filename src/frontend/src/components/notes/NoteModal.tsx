@@ -455,7 +455,7 @@ export function NoteModal({
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={handleSave} size="xl" showClose={false}>
+      <Modal isOpen={isOpen} onClose={handleSave} size="2xl" showClose={false}>
         {/* Outer wrapper fills the modal padding area and applies note color */}
         <div style={bgStyle} className="rounded-xl -m-4">
           {/* Sticky header toolbar */}

@@ -8,7 +8,7 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  size?: "sm" | "md" | "lg" | "xl" | "full";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
   showClose?: boolean;
 }
 
@@ -45,6 +45,7 @@ export function Modal({
     md: "max-w-md",
     lg: "max-w-lg",
     xl: "max-w-2xl",
+    "2xl": "max-w-4xl",
     full: "max-w-full mx-4",
   };
 
@@ -63,7 +64,7 @@ export function Modal({
         className={`
           relative w-full ${sizeClasses[size]} bg-card rounded-t-2xl md:rounded-2xl
           shadow-modal border border-border/50 animate-slide-up
-          max-h-[92vh] md:max-h-[88vh] overflow-y-auto
+          max-h-[95vh] md:max-h-[92vh] overflow-y-auto
         `}
       >
         {(title || showClose) && (

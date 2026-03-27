@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Archive,
-  Download,
+  FileDown,
   FileJson,
   FileText,
   FileType,
@@ -229,7 +229,7 @@ export function NotesPage({
                   aria-label="Export all notes"
                   title="Export All Notes"
                 >
-                  <Download className="w-4 h-4" />
+                  <FileDown className="w-4 h-4" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
