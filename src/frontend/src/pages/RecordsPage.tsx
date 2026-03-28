@@ -636,8 +636,9 @@ export default function RecordsPage() {
       </div>
 
       {/* ── Search & date filters ── */}
-      <div className="px-4 pb-2 flex flex-wrap gap-2">
-        <div className="relative flex-1 min-w-[160px]">
+      <div className="px-4 pb-3 flex flex-col gap-2">
+        {/* Search row */}
+        <div className="relative w-full">
           <Search
             size={14}
             className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -646,7 +647,7 @@ export default function RecordsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search records…"
-            className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full pl-8 pr-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-accent"
             data-ocid="records.search_input"
           />
           {search && (
@@ -659,38 +660,46 @@ export default function RecordsPage() {
             </button>
           )}
         </div>
-        <label className="flex flex-col items-start">
-          <span className="text-xs text-muted-foreground px-1 mb-0.5">
-            From
+        {/* Date range row */}
+        <div className="flex items-center gap-2 w-full">
+          <div className="flex-1 relative">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground pointer-events-none select-none z-10">
+              {dateFrom ? "" : "From"}
+            </span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className={`w-full py-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent ${dateFrom ? "px-2.5" : "px-2.5 text-transparent focus:text-foreground"}`}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground font-medium shrink-0">
+            —
           </span>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="px-2 py-1.5 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-        </label>
-        <label className="flex flex-col items-start">
-          <span className="text-xs text-muted-foreground px-1 mb-0.5">To</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="px-2 py-1.5 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-          />
-        </label>
-        {(dateFrom || dateTo) && (
-          <button
-            type="button"
-            onClick={() => {
-              setDateFrom("");
-              setDateTo("");
-            }}
-            className="px-2 py-1.5 rounded-lg border border-border bg-background text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Clear dates
-          </button>
-        )}
+          <div className="flex-1 relative">
+            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground pointer-events-none select-none z-10">
+              {dateTo ? "" : "To"}
+            </span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className={`w-full py-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent ${dateTo ? "px-2.5" : "px-2.5 text-transparent focus:text-foreground"}`}
+            />
+          </div>
+          {(dateFrom || dateTo) && (
+            <button
+              type="button"
+              onClick={() => {
+                setDateFrom("");
+                setDateTo("");
+              }}
+              className="shrink-0 flex items-center gap-1 px-2.5 py-2 rounded-lg border border-border bg-background text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X size={12} /> Clear
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Add form ── */}
