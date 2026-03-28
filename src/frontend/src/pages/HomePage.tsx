@@ -18,6 +18,21 @@ export function HomePage({ onNavigate, onQuickAddNote }: HomePageProps) {
     return () => clearInterval(timer);
   }, []);
 
+  const DEFAULT_GREETING = "Hi Dev...💛";
+  const [greeting, setGreeting] = React.useState(
+    () => localStorage.getItem("landingGreeting") || DEFAULT_GREETING,
+  );
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "landingGreeting") {
+        setGreeting(e.newValue || DEFAULT_GREETING);
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const dateStr = format(now, "EEEE, MMMM d");
   const timeStr = now.toLocaleTimeString(undefined, {
     hour: "2-digit",
@@ -35,7 +50,7 @@ export function HomePage({ onNavigate, onQuickAddNote }: HomePageProps) {
           <span className="text-xs text-muted-foreground opacity-40">·</span>
           <p className="text-xs font-medium text-primary">{timeStr}</p>
         </div>
-        <h1 className="text-2xl font-bold mt-0.5">Hi Dev...💛</h1>
+        <h1 className="text-2xl font-bold mt-0.5">{greeting}</h1>
       </div>
 
       {/* Widgets grid */}

@@ -69,6 +69,60 @@ const ACCENT_OPTIONS = [
   { id: "golden-yellow", label: "Golden", color: "#f0b429" },
 ];
 
+function HomeGreetingEditor() {
+  const DEFAULT_GREETING = "Hi Dev...💛";
+  const [value, setValue] = useState(
+    () => localStorage.getItem("landingGreeting") || DEFAULT_GREETING,
+  );
+  const [saved, setSaved] = useState(false);
+
+  const handleSave = () => {
+    localStorage.setItem("landingGreeting", value);
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "landingGreeting", newValue: value }),
+    );
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleReset = () => {
+    localStorage.removeItem("landingGreeting");
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "landingGreeting", newValue: null }),
+    );
+    setValue(DEFAULT_GREETING);
+  };
+
+  return (
+    <div className="space-y-2">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="w-full border border-border/50 rounded-lg px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+        placeholder="Enter greeting text..."
+        data-ocid="settings.input"
+      />
+      <div className="flex items-center gap-3">
+        <Button size="sm" onClick={handleSave} data-ocid="settings.save_button">
+          Save
+        </Button>
+        {saved && (
+          <span className="text-xs text-green-600 font-medium">Saved!</span>
+        )}
+        <button
+          type="button"
+          onClick={handleReset}
+          className="text-xs text-muted-foreground hover:text-foreground underline ml-auto"
+          data-ocid="settings.secondary_button"
+        >
+          Reset to default
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function SettingsPage() {
   const { theme, accentColor, fontFamily, setThemeMode, setAccent, setFont } =
     useAppStore();
@@ -429,6 +483,14 @@ export function SettingsPage() {
             />
           </label>
         )}
+      </section>
+
+      {/* Home Greeting */}
+      <section className="bg-card rounded-xl border border-border/50 p-4 mb-4">
+        <h2 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          <Type className="w-4 h-4 text-primary" /> Home Greeting
+        </h2>
+        <HomeGreetingEditor />
       </section>
 
       {/* Storage */}

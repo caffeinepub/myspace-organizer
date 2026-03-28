@@ -547,7 +547,7 @@ export function LockerMain({ onLock }: Props) {
             aria-label="Import locker entries"
             data-ocid="locker.upload_button"
           >
-            <Upload className="w-3.5 h-3.5 shrink-0" />
+            <Download className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline">Import</span>
           </button>
           <input
@@ -568,7 +568,7 @@ export function LockerMain({ onLock }: Props) {
               aria-label="Export locker entries"
               data-ocid="locker.button"
             >
-              <Download className="w-3.5 h-3.5 shrink-0" />
+              <Upload className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">Export</span>
               <ChevronDown className="w-3 h-3 shrink-0" />
             </button>
