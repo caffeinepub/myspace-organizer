@@ -18,6 +18,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Note, NoteChecklistItem } from "../../db/schema";
 import { useImageStorage } from "../../hooks/useImageStorage";
 import { useLabels } from "../../hooks/useLabels";
+import { useScrollLock } from "../../hooks/useScrollLock";
 import { useSpeechRecognition } from "../../hooks/useSpeechRecognition";
 import { showErrorToast } from "../../store/toastStore";
 import { compressImage, generateThumbnail } from "../../utils/imageCompression";
@@ -25,7 +26,6 @@ import { exportNoteAsDoc } from "../../utils/noteExport";
 import { FilePreviewModal } from "../common/FilePreviewModal";
 import type { AttachedFile } from "../common/FilePreviewModal";
 import { ImageUploadPicker } from "../common/ImageUploadPicker";
-import { Modal } from "../common/Modal";
 import { SketchCanvas } from "./SketchCanvas";
 
 // ── Note-attachment storage helpers (localStorage, separate from imageRefs) ──────
@@ -504,10 +504,19 @@ export function NoteModal({
     }
   };
 
-  if (!note) return null;
+  // ── Scroll lock and Escape key handler for custom overlay ───────────────────
+  useScrollLock(isOpen);
 
-  const bgStyle: React.CSSProperties =
-    color !== "default" ? { backgroundColor: color } : {};
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleSave();
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [isOpen, handleSave]);
+
+  if (!note) return null;
 
   // ── Shared checklist editor (used for both checklist-type notes and inline in text notes) ──
   const ChecklistEditor = (
@@ -585,645 +594,669 @@ export function NoteModal({
         backgroundImageUrl={sketchBgUrl}
       />
 
-      <Modal isOpen={isOpen} onClose={handleSave} size="2xl" showClose={false}>
-        {/* Outer wrapper fills the modal padding area and applies note color */}
-        <div style={bgStyle} className="bg-card rounded-xl -m-4">
-          {/* Sticky header toolbar — z-30 ensures it always renders above image content on mobile */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
           <div
-            className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-y-2 px-4 pt-4 pb-3 rounded-t-xl bg-card backdrop-blur-sm shadow-sm min-h-[52px]"
-            style={bgStyle}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={handleSave}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") handleSave();
+            }}
+            role="button"
+            tabIndex={-1}
+            aria-label="Close note"
+          />
+          <div
+            style={{
+              ...(color !== "default" ? { backgroundColor: color } : {}),
+              maxHeight: "96dvh",
+            }}
+            className="relative w-full max-w-5xl bg-card rounded-t-2xl md:rounded-2xl shadow-2xl border border-border/50 flex flex-col animate-slide-up"
           >
-            {/* Left group: Pin, Color, Label, Archive, Export — wraps on narrow screens */}
-            <div className="flex flex-shrink-0 flex-wrap items-center gap-1 min-w-0">
-              <button
-                type="button"
-                onClick={() => {
-                  if (note.id) onPin(note.id);
-                }}
-                className={`p-1.5 rounded-lg hover:bg-black/10 transition-colors ${
-                  note.pinned ? "text-primary" : "text-muted-foreground"
-                }`}
-                aria-label={note.pinned ? "Unpin note" : "Pin note"}
-              >
-                <Pin className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowColorPicker(!showColorPicker)}
-                className="p-1.5 rounded-lg hover:bg-black/10 transition-colors text-muted-foreground"
-                aria-label="Change note color"
-              >
-                <div
-                  className="w-4 h-4 rounded-full border-2 border-current"
-                  style={{
-                    backgroundColor: color !== "default" ? color : undefined,
+            {/* Header - shrink-0 so it NEVER scrolls away */}
+            <div
+              className="shrink-0 flex flex-wrap items-center justify-between gap-y-2 px-4 pt-4 pb-3 rounded-t-2xl bg-card shadow-sm min-h-[52px] z-10"
+              style={color !== "default" ? { backgroundColor: color } : {}}
+            >
+              {/* Left group: Pin, Color, Label, Archive, Export — wraps on narrow screens */}
+              <div className="flex flex-shrink-0 flex-wrap items-center gap-1 min-w-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (note.id) onPin(note.id);
                   }}
-                />
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowLabelPicker(!showLabelPicker)}
-                className="p-1.5 rounded-lg hover:bg-black/10 transition-colors text-muted-foreground text-xs font-medium"
-                aria-label="Manage labels"
-              >
-                🏷️
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (note.id) onArchive(note.id);
-                  onClose();
-                }}
-                className="p-1.5 rounded-lg hover:bg-black/10 transition-colors text-muted-foreground"
-                aria-label="Archive note"
-              >
-                <Archive className="w-4 h-4" />
-              </button>
-              {/* Export as Document button */}
-              <button
-                type="button"
-                onClick={handleExportDoc}
-                className="p-1.5 rounded-lg hover:bg-black/10 transition-colors text-muted-foreground"
-                aria-label="Export note as document"
-                title="Export as .DOC"
-              >
-                <FileDown className="w-4 h-4" />
-              </button>
-            </div>
-            {/* Right group: Trash + Done — always flex-shrink-0 so they never disappear */}
-            <div className="flex flex-shrink-0 items-center gap-1">
-              <button
-                type="button"
-                onClick={() => {
-                  if (note.id) onTrash(note.id);
-                  onClose();
-                }}
-                className="p-1.5 rounded-lg hover:bg-black/10 transition-colors text-muted-foreground"
-                aria-label="Move to trash"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
-                aria-label="Save and close note"
-              >
-                Done
-              </button>
-            </div>
-          </div>
-
-          {/* Scrollable content body */}
-          <div className="px-5 pb-6 flex flex-col gap-3">
-            {/* Color picker */}
-            {showColorPicker && (
-              <div className="flex flex-wrap gap-2 p-2 bg-card/80 rounded-lg">
-                {NOTE_COLORS.map((c) => (
-                  <button
-                    type="button"
-                    key={c.value}
-                    onClick={() => {
-                      setColor(c.value);
-                      setShowColorPicker(false);
-                    }}
-                    className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110
-                    ${color === c.value ? "border-primary scale-110" : "border-border"}`}
+                  className={`p-1.5 rounded-lg hover:bg-black/10 transition-colors ${
+                    note.pinned ? "text-primary" : "text-muted-foreground"
+                  }`}
+                  aria-label={note.pinned ? "Unpin note" : "Pin note"}
+                >
+                  <Pin className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowColorPicker(!showColorPicker)}
+                  className="p-1.5 rounded-lg hover:bg-black/10 transition-colors text-muted-foreground"
+                  aria-label="Change note color"
+                >
+                  <div
+                    className="w-4 h-4 rounded-full border-2 border-current"
                     style={{
-                      backgroundColor:
-                        c.value === "default" ? undefined : c.value,
+                      backgroundColor: color !== "default" ? color : undefined,
                     }}
-                    aria-label={`Set color to ${c.label}`}
-                    title={c.label}
-                  >
-                    {c.value === "default" && (
-                      <X className="w-3 h-3 mx-auto text-muted-foreground" />
-                    )}
-                  </button>
-                ))}
+                  />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowLabelPicker(!showLabelPicker)}
+                  className="p-1.5 rounded-lg hover:bg-black/10 transition-colors text-muted-foreground text-xs font-medium"
+                  aria-label="Manage labels"
+                >
+                  🏷️
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (note.id) onArchive(note.id);
+                    onClose();
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-black/10 transition-colors text-muted-foreground"
+                  aria-label="Archive note"
+                >
+                  <Archive className="w-4 h-4" />
+                </button>
+                {/* Export as Document button */}
+                <button
+                  type="button"
+                  onClick={handleExportDoc}
+                  className="p-1.5 rounded-lg hover:bg-black/10 transition-colors text-muted-foreground"
+                  aria-label="Export note as document"
+                  title="Export as .DOC"
+                >
+                  <FileDown className="w-4 h-4" />
+                </button>
               </div>
-            )}
+              {/* Right group: Trash + Done — always flex-shrink-0 so they never disappear */}
+              <div className="flex flex-shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (note.id) onTrash(note.id);
+                    onClose();
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-black/10 transition-colors text-muted-foreground"
+                  aria-label="Move to trash"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:opacity-90 transition-opacity"
+                  aria-label="Save and close note"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
 
-            {/* Label picker */}
-            {showLabelPicker && (
-              <div className="flex flex-wrap gap-1.5 p-2 bg-card/80 rounded-lg">
-                {labels.map((label) => (
-                  <button
-                    type="button"
-                    key={label.id}
-                    onClick={() => {
-                      setSelectedLabels((prev) =>
-                        prev.includes(label.name)
-                          ? prev.filter((l) => l !== label.name)
-                          : [...prev, label.name],
-                      );
-                    }}
-                    className={`text-xs px-2 py-1 rounded-full border transition-colors
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto min-h-0 px-5 pb-6 flex flex-col gap-3">
+              {/* Color picker */}
+              {showColorPicker && (
+                <div className="flex flex-wrap gap-2 p-2 bg-card/80 rounded-lg">
+                  {NOTE_COLORS.map((c) => (
+                    <button
+                      type="button"
+                      key={c.value}
+                      onClick={() => {
+                        setColor(c.value);
+                        setShowColorPicker(false);
+                      }}
+                      className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-110
+                    ${color === c.value ? "border-primary scale-110" : "border-border"}`}
+                      style={{
+                        backgroundColor:
+                          c.value === "default" ? undefined : c.value,
+                      }}
+                      aria-label={`Set color to ${c.label}`}
+                      title={c.label}
+                    >
+                      {c.value === "default" && (
+                        <X className="w-3 h-3 mx-auto text-muted-foreground" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Label picker */}
+              {showLabelPicker && (
+                <div className="flex flex-wrap gap-1.5 p-2 bg-card/80 rounded-lg">
+                  {labels.map((label) => (
+                    <button
+                      type="button"
+                      key={label.id}
+                      onClick={() => {
+                        setSelectedLabels((prev) =>
+                          prev.includes(label.name)
+                            ? prev.filter((l) => l !== label.name)
+                            : [...prev, label.name],
+                        );
+                      }}
+                      className={`text-xs px-2 py-1 rounded-full border transition-colors
                     ${
                       selectedLabels.includes(label.name)
                         ? "bg-primary text-primary-foreground border-primary"
                         : "border-border hover:bg-muted"
                     }`}
-                    aria-label={`${
-                      selectedLabels.includes(label.name) ? "Remove" : "Add"
-                    } label ${label.name}`}
-                  >
-                    {label.name}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Selected labels display */}
-            {selectedLabels.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {selectedLabels.map((lbl) => (
-                  <span
-                    key={lbl}
-                    className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 font-medium"
-                  >
-                    🏷️ {lbl}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* ── Hashtag chips — derived from content (additive) ────────────── */}
-            {hashtags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {hashtags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full font-medium"
-                    style={{
-                      background: "rgba(59,130,246,0.12)",
-                      color: "#2563eb",
-                      border: "1px solid rgba(59,130,246,0.3)",
-                    }}
-                    aria-label={`Hashtag ${tag}`}
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Title */}
-            <input
-              ref={titleRef}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onFocus={() => setActiveField("title")}
-              placeholder="Title"
-              className="w-full bg-transparent text-lg font-semibold placeholder:text-muted-foreground/60 outline-none"
-              aria-label="Note title"
-            />
-
-            {/* Content based on type */}
-            {note.type === "text" && (
-              <div className="relative">
-                <textarea
-                  ref={contentRef}
-                  value={
-                    content +
-                    (isListening && interimTranscript ? interimTranscript : "")
-                  }
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (
-                      isListening &&
-                      interimTranscript &&
-                      val.endsWith(interimTranscript)
-                    ) {
-                      setContent(
-                        val.slice(0, val.length - interimTranscript.length),
-                      );
-                    } else {
-                      setContent(val);
-                    }
-                  }}
-                  onFocus={() => setActiveField("content")}
-                  placeholder="Take a note... (use #hashtag to tag)"
-                  className="w-full bg-transparent text-base placeholder:text-muted-foreground/60 outline-none resize-none min-h-[260px] pr-8"
-                  aria-label="Note content"
-                />
-                {/* Mic button — bottom-right of textarea */}
-                <div className="absolute bottom-1 right-0 flex items-center">
-                  {!speechSupported ? (
-                    <span className="text-[10px] text-muted-foreground italic">
-                      Speech not supported
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleMicToggle}
-                      className={`p-1 rounded-lg transition-colors ${
-                        isListening
-                          ? "text-destructive hover:bg-destructive/10 animate-pulse"
-                          : "text-muted-foreground hover:bg-black/10"
-                      }`}
-                      aria-label={
-                        isListening
-                          ? "Stop speech recognition"
-                          : "Start speech recognition"
-                      }
-                      title={isListening ? "Stop dictation" : "Dictate note"}
+                      aria-label={`${
+                        selectedLabels.includes(label.name) ? "Remove" : "Add"
+                      } label ${label.name}`}
                     >
-                      {isListening ? (
-                        <MicOff className="w-3.5 h-3.5" />
-                      ) : (
-                        <Mic className="w-3.5 h-3.5" />
-                      )}
+                      {label.name}
                     </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Selected labels display */}
+              {selectedLabels.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedLabels.map((lbl) => (
+                    <span
+                      key={lbl}
+                      className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 font-medium"
+                    >
+                      🏷️ {lbl}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* ── Hashtag chips — derived from content (additive) ────────────── */}
+              {hashtags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {hashtags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full font-medium"
+                      style={{
+                        background: "rgba(59,130,246,0.12)",
+                        color: "#2563eb",
+                        border: "1px solid rgba(59,130,246,0.3)",
+                      }}
+                      aria-label={`Hashtag ${tag}`}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Title */}
+              <input
+                ref={titleRef}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onFocus={() => setActiveField("title")}
+                placeholder="Title"
+                className="w-full bg-transparent text-lg font-semibold placeholder:text-muted-foreground/60 outline-none"
+                aria-label="Note title"
+              />
+
+              {/* Content based on type */}
+              {note.type === "text" && (
+                <div className="relative">
+                  <textarea
+                    ref={contentRef}
+                    value={
+                      content +
+                      (isListening && interimTranscript
+                        ? interimTranscript
+                        : "")
+                    }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (
+                        isListening &&
+                        interimTranscript &&
+                        val.endsWith(interimTranscript)
+                      ) {
+                        setContent(
+                          val.slice(0, val.length - interimTranscript.length),
+                        );
+                      } else {
+                        setContent(val);
+                      }
+                    }}
+                    onFocus={() => setActiveField("content")}
+                    placeholder="Take a note... (use #hashtag to tag)"
+                    className="w-full bg-transparent text-base placeholder:text-muted-foreground/60 outline-none resize-none min-h-[260px] pr-8"
+                    aria-label="Note content"
+                  />
+                  {/* Mic button — bottom-right of textarea */}
+                  <div className="absolute bottom-1 right-0 flex items-center">
+                    {!speechSupported ? (
+                      <span className="text-[10px] text-muted-foreground italic">
+                        Speech not supported
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleMicToggle}
+                        className={`p-1 rounded-lg transition-colors ${
+                          isListening
+                            ? "text-destructive hover:bg-destructive/10 animate-pulse"
+                            : "text-muted-foreground hover:bg-black/10"
+                        }`}
+                        aria-label={
+                          isListening
+                            ? "Stop speech recognition"
+                            : "Start speech recognition"
+                        }
+                        title={isListening ? "Stop dictation" : "Dictate note"}
+                      >
+                        {isListening ? (
+                          <MicOff className="w-3.5 h-3.5" />
+                        ) : (
+                          <Mic className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Speech status / error for text notes */}
+              {note.type === "text" && (
+                <>
+                  {isListening && (
+                    <p className="text-[10px] text-primary flex items-center gap-1">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
+                      Listening…
+                      {interimTranscript ? ` "${interimTranscript}"` : ""}
+                    </p>
+                  )}
+                  {speechError && (
+                    <p className="text-[10px] text-destructive">
+                      {speechError}
+                    </p>
+                  )}
+                </>
+              )}
+
+              {/* ── Inline checklist toggle for text notes (additive) ─────────── */}
+              {note.type === "text" && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => setShowInlineChecklist((v) => !v)}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                      showInlineChecklist
+                        ? "bg-primary/15 text-primary border border-primary/30"
+                        : "bg-muted hover:bg-muted/80 text-muted-foreground"
+                    }`}
+                    aria-label="Toggle checklist"
+                    aria-expanded={showInlineChecklist}
+                  >
+                    <CheckSquare className="w-3.5 h-3.5" />
+                    Checklist
+                    {checklistItems.length > 0 && (
+                      <span className="ml-1 text-[10px] bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">
+                        {checklistItems.length}
+                      </span>
+                    )}
+                  </button>
+                  {showInlineChecklist && (
+                    <div className="mt-2 pl-1">{ChecklistEditor}</div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Speech status / error for text notes */}
-            {note.type === "text" && (
-              <>
-                {isListening && (
-                  <p className="text-[10px] text-primary flex items-center gap-1">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-destructive animate-pulse" />
-                    Listening…
-                    {interimTranscript ? ` "${interimTranscript}"` : ""}
-                  </p>
-                )}
-                {speechError && (
-                  <p className="text-[10px] text-destructive">{speechError}</p>
-                )}
-              </>
-            )}
-
-            {/* ── Inline checklist toggle for text notes (additive) ─────────── */}
-            {note.type === "text" && (
-              <div>
+              {/* ── Draw (sketch) button for text notes ──────────────────────── */}
+              {note.type === "text" && (
                 <button
                   type="button"
-                  onClick={() => setShowInlineChecklist((v) => !v)}
-                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors ${
-                    showInlineChecklist
-                      ? "bg-primary/15 text-primary border border-primary/30"
-                      : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                  }`}
-                  aria-label="Toggle checklist"
-                  aria-expanded={showInlineChecklist}
+                  onClick={() => {
+                    setSketchBgUrl(null);
+                    setShowSketchCanvas(true);
+                  }}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground w-fit"
+                  aria-label="Open sketch canvas"
                 >
-                  <CheckSquare className="w-3.5 h-3.5" />
-                  Checklist
-                  {checklistItems.length > 0 && (
-                    <span className="ml-1 text-[10px] bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">
-                      {checklistItems.length}
-                    </span>
-                  )}
+                  <Pencil className="w-3.5 h-3.5" />
+                  Draw / Sketch
                 </button>
-                {showInlineChecklist && (
-                  <div className="mt-2 pl-1">{ChecklistEditor}</div>
-                )}
-              </div>
-            )}
+              )}
 
-            {/* ── Draw (sketch) button for text notes ──────────────────────── */}
-            {note.type === "text" && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSketchBgUrl(null);
-                  setShowSketchCanvas(true);
-                }}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground w-fit"
-                aria-label="Open sketch canvas"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-                Draw / Sketch
-              </button>
-            )}
+              {note.type === "checklist" && (
+                <div className="space-y-2">{ChecklistEditor}</div>
+              )}
 
-            {note.type === "checklist" && (
-              <div className="space-y-2">{ChecklistEditor}</div>
-            )}
+              {note.type === "image" && (
+                <div className="space-y-3">
+                  {/* Hidden file inputs for the three upload options */}
+                  <input
+                    ref={cameraInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    aria-label="Capture image with camera"
+                  />
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    aria-label="Select image from gallery"
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    aria-label="Upload image file"
+                  />
 
-            {note.type === "image" && (
-              <div className="space-y-3">
-                {/* Hidden file inputs for the three upload options */}
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                  aria-label="Capture image with camera"
-                />
-                <input
-                  ref={galleryInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                  aria-label="Select image from gallery"
-                />
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageUpload}
-                  aria-label="Upload image file"
-                />
+                  {/* Image display — natural aspect ratio */}
+                  {imageUrl ? (
+                    <div className="relative w-full">
+                      <img
+                        src={imageUrl}
+                        alt={title || "Note image"}
+                        onLoad={handleImageLoad}
+                        className="w-full h-auto rounded-xl block"
+                        style={
+                          imgNaturalAspect
+                            ? { aspectRatio: String(imgNaturalAspect) }
+                            : undefined
+                        }
+                      />
+                      {/* Draw on image button (top-right overlay) */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSketchBgUrl(imageUrl);
+                          setShowSketchCanvas(true);
+                        }}
+                        className="absolute top-2 right-2 flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
+                        aria-label="Draw on this image"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        Draw
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center h-32 bg-muted/30 rounded-xl border-2 border-dashed border-border/50">
+                      <span className="text-sm text-muted-foreground">
+                        No image attached
+                      </span>
+                    </div>
+                  )}
 
-                {/* Image display — natural aspect ratio */}
-                {imageUrl ? (
-                  <div className="relative w-full">
-                    <img
-                      src={imageUrl}
-                      alt={title || "Note image"}
-                      onLoad={handleImageLoad}
-                      className="w-full h-auto rounded-xl block"
-                      style={
-                        imgNaturalAspect
-                          ? { aspectRatio: String(imgNaturalAspect) }
-                          : undefined
-                      }
-                    />
-                    {/* Draw on image button (top-right overlay) */}
+                  {/* Upload picker trigger + Draw button row */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div
+                      ref={uploadTriggerRef}
+                      className="relative inline-block"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setShowImagePicker((v) => !v)}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                        aria-label="Change image"
+                      >
+                        {imageUrl ? "Change image" : "Add image"}
+                      </button>
+                      {showImagePicker && (
+                        <ImageUploadPicker
+                          isOpen={showImagePicker}
+                          onClose={() => setShowImagePicker(false)}
+                          onCameraClick={() => {
+                            setShowImagePicker(false);
+                            cameraInputRef.current?.click();
+                          }}
+                          onGalleryClick={() => {
+                            setShowImagePicker(false);
+                            galleryInputRef.current?.click();
+                          }}
+                          onFileClick={() => {
+                            setShowImagePicker(false);
+                            fileInputRef.current?.click();
+                          }}
+                        />
+                      )}
+                    </div>
+                    {/* Standalone sketch (no image bg) */}
                     <button
                       type="button"
                       onClick={() => {
-                        setSketchBgUrl(imageUrl);
+                        setSketchBgUrl(null);
                         setShowSketchCanvas(true);
                       }}
-                      className="absolute top-2 right-2 flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
-                      aria-label="Draw on this image"
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                      aria-label="Open blank sketch canvas"
                     >
                       <Pencil className="w-3.5 h-3.5" />
-                      Draw
+                      Sketch
                     </button>
                   </div>
-                ) : (
-                  <div className="flex items-center justify-center h-32 bg-muted/30 rounded-xl border-2 border-dashed border-border/50">
-                    <span className="text-sm text-muted-foreground">
-                      No image attached
-                    </span>
-                  </div>
-                )}
 
-                {/* Upload picker trigger + Draw button row */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div ref={uploadTriggerRef} className="relative inline-block">
-                    <button
-                      type="button"
-                      onClick={() => setShowImagePicker((v) => !v)}
-                      className="text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
-                      aria-label="Change image"
-                    >
-                      {imageUrl ? "Change image" : "Add image"}
-                    </button>
-                    {showImagePicker && (
-                      <ImageUploadPicker
-                        isOpen={showImagePicker}
-                        onClose={() => setShowImagePicker(false)}
-                        onCameraClick={() => {
-                          setShowImagePicker(false);
-                          cameraInputRef.current?.click();
-                        }}
-                        onGalleryClick={() => {
-                          setShowImagePicker(false);
-                          galleryInputRef.current?.click();
-                        }}
-                        onFileClick={() => {
-                          setShowImagePicker(false);
-                          fileInputRef.current?.click();
-                        }}
-                      />
-                    )}
-                  </div>
-                  {/* Standalone sketch (no image bg) */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSketchBgUrl(null);
-                      setShowSketchCanvas(true);
-                    }}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
-                    aria-label="Open blank sketch canvas"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    Sketch
-                  </button>
+                  {/* Optional caption */}
+                  <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    placeholder="Add a caption..."
+                    className="w-full bg-transparent text-sm placeholder:text-muted-foreground/60 outline-none resize-none min-h-[60px]"
+                    aria-label="Image caption"
+                  />
                 </div>
-
-                {/* Optional caption */}
-                <textarea
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Add a caption..."
-                  className="w-full bg-transparent text-sm placeholder:text-muted-foreground/60 outline-none resize-none min-h-[60px]"
-                  aria-label="Image caption"
-                />
-              </div>
-            )}
-
-            {/* ── Multi-file attachments section (additive) ──────────────────── */}
-            {/* Hidden file inputs */}
-            <input
-              ref={attachCameraRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              multiple
-              className="hidden"
-              onChange={handleAttachCameraChange}
-              aria-label="Capture photo with camera for attachment"
-            />
-            <input
-              ref={attachGalleryRef}
-              type="file"
-              accept="*/*"
-              multiple
-              className="hidden"
-              onChange={handleAttachGalleryChange}
-              aria-label="Select files from gallery for attachment"
-            />
-            <input
-              ref={attachFileRef}
-              type="file"
-              accept="*/*"
-              multiple
-              className="hidden"
-              onChange={handleAttachFileChange}
-              aria-label="Upload documents or files for attachment"
-            />
-
-            {/* Attachment list */}
-            {attachedFiles.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
-                  Attachments ({attachedFiles.length})
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {attachedFiles.map((af) => {
-                    const isImg = af.mimeType.startsWith("image/");
-                    const isVid = af.mimeType.startsWith("video/");
-                    return (
-                      <div
-                        key={af.key}
-                        className="relative group rounded-lg overflow-hidden border border-border/50 bg-muted/20"
-                        style={{ maxWidth: isImg ? 120 : undefined }}
-                      >
-                        {isImg ? (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenPreview(af)}
-                            className="block w-full"
-                            aria-label={`Preview ${af.name}`}
-                            title={af.name}
-                          >
-                            <img
-                              src={af.url}
-                              alt={af.name}
-                              className="w-full h-auto block"
-                              style={{ maxHeight: 100, objectFit: "contain" }}
-                            />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenPreview(af)}
-                            className="flex items-center gap-2 px-2 py-1.5 text-xs text-foreground hover:bg-muted transition-colors w-full text-left"
-                            aria-label={`Preview or download ${af.name}`}
-                            title={af.name}
-                          >
-                            <span className="text-base leading-none shrink-0">
-                              {isVid
-                                ? "🎬"
-                                : af.mimeType === "application/pdf"
-                                  ? "📄"
-                                  : "📎"}
-                            </span>
-                            <span className="truncate max-w-[120px]">
-                              {af.name}
-                            </span>
-                          </button>
-                        )}
-                        {/* Remove button */}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveAttachment(af.key)}
-                          className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-destructive"
-                          aria-label={`Remove attachment ${af.name}`}
-                        >
-                          <X className="w-2.5 h-2.5" />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Add attachment button + inline picker (no absolute positioning) */}
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowAttachPicker((v) => !v)}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
-                aria-label="Add attachment"
-                aria-expanded={showAttachPicker}
-                data-ocid="notes.upload_button"
-              >
-                <Paperclip className="w-3.5 h-3.5" />
-                Add Attachment
-              </button>
-              {showAttachPicker && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAttachPicker(false);
-                      attachCameraRef.current?.click();
-                    }}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
-                    aria-label="Open camera"
-                  >
-                    <span>📷</span> Camera
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAttachPicker(false);
-                      attachFileRef.current?.click();
-                    }}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
-                    aria-label="Add files"
-                  >
-                    <span>📁</span> Add Files
-                  </button>
-                </>
               )}
-            </div>
 
-            {/* Selected labels display */}
-            {selectedLabels.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {selectedLabels.map((label) => (
-                  <span
-                    key={label}
-                    className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary"
-                  >
-                    {label}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {/* Reminder */}
-            <div className="flex items-center gap-2">
-              <label
-                className="text-xs text-muted-foreground shrink-0"
-                htmlFor="note-reminder"
-              >
-                Reminder
-              </label>
+              {/* ── Multi-file attachments section (additive) ──────────────────── */}
+              {/* Hidden file inputs */}
               <input
-                id="note-reminder"
-                type="datetime-local"
-                value={reminderAt}
-                onChange={(e) => setReminderAt(e.target.value)}
-                className="flex-1 bg-transparent text-xs outline-none border border-border/50 rounded-lg px-2 py-1 focus:border-primary transition-colors"
-                aria-label="Set reminder"
+                ref={attachCameraRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple
+                className="hidden"
+                onChange={handleAttachCameraChange}
+                aria-label="Capture photo with camera for attachment"
               />
-              {reminderAt && (
+              <input
+                ref={attachGalleryRef}
+                type="file"
+                accept="*/*"
+                multiple
+                className="hidden"
+                onChange={handleAttachGalleryChange}
+                aria-label="Select files from gallery for attachment"
+              />
+              <input
+                ref={attachFileRef}
+                type="file"
+                accept="*/*"
+                multiple
+                className="hidden"
+                onChange={handleAttachFileChange}
+                aria-label="Upload documents or files for attachment"
+              />
+
+              {/* Attachment list */}
+              {attachedFiles.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+                    Attachments ({attachedFiles.length})
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {attachedFiles.map((af) => {
+                      const isImg = af.mimeType.startsWith("image/");
+                      const isVid = af.mimeType.startsWith("video/");
+                      return (
+                        <div
+                          key={af.key}
+                          className="relative group rounded-lg overflow-hidden border border-border/50 bg-muted/20"
+                          style={{ maxWidth: isImg ? 120 : undefined }}
+                        >
+                          {isImg ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenPreview(af)}
+                              className="block w-full"
+                              aria-label={`Preview ${af.name}`}
+                              title={af.name}
+                            >
+                              <img
+                                src={af.url}
+                                alt={af.name}
+                                className="w-full h-auto block"
+                                style={{ maxHeight: 100, objectFit: "contain" }}
+                              />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenPreview(af)}
+                              className="flex items-center gap-2 px-2 py-1.5 text-xs text-foreground hover:bg-muted transition-colors w-full text-left"
+                              aria-label={`Preview or download ${af.name}`}
+                              title={af.name}
+                            >
+                              <span className="text-base leading-none shrink-0">
+                                {isVid
+                                  ? "🎬"
+                                  : af.mimeType === "application/pdf"
+                                    ? "📄"
+                                    : "📎"}
+                              </span>
+                              <span className="truncate max-w-[120px]">
+                                {af.name}
+                              </span>
+                            </button>
+                          )}
+                          {/* Remove button */}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAttachment(af.key)}
+                            className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-destructive"
+                            aria-label={`Remove attachment ${af.name}`}
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Add attachment button + inline picker (no absolute positioning) */}
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setReminderAt("")}
-                  className="text-muted-foreground hover:text-destructive transition-colors"
-                  aria-label="Clear reminder"
+                  onClick={() => setShowAttachPicker((v) => !v)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                  aria-label="Add attachment"
+                  aria-expanded={showAttachPicker}
+                  data-ocid="notes.upload_button"
                 >
-                  <X className="w-3 h-3" />
+                  <Paperclip className="w-3.5 h-3.5" />
+                  Add Attachment
                 </button>
-              )}
-            </div>
-
-            {/* Timestamps */}
-            {note.id && (
-              <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground/60 pt-1 border-t border-border/20">
-                {note.createdAt && (
-                  <span>
-                    Created: {new Date(note.createdAt).toLocaleString()}
-                  </span>
-                )}
-                {note.updatedAt && (
-                  <span>
-                    Updated: {new Date(note.updatedAt).toLocaleString()}
-                  </span>
+                {showAttachPicker && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAttachPicker(false);
+                        attachCameraRef.current?.click();
+                      }}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                      aria-label="Open camera"
+                    >
+                      <span>📷</span> Camera
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAttachPicker(false);
+                        attachFileRef.current?.click();
+                      }}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                      aria-label="Add files"
+                    >
+                      <span>📁</span> Add Files
+                    </button>
+                  </>
                 )}
               </div>
-            )}
+
+              {/* Selected labels display */}
+              {selectedLabels.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {selectedLabels.map((label) => (
+                    <span
+                      key={label}
+                      className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary"
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Reminder */}
+              <div className="flex items-center gap-2">
+                <label
+                  className="text-xs text-muted-foreground shrink-0"
+                  htmlFor="note-reminder"
+                >
+                  Reminder
+                </label>
+                <input
+                  id="note-reminder"
+                  type="datetime-local"
+                  value={reminderAt}
+                  onChange={(e) => setReminderAt(e.target.value)}
+                  className="flex-1 bg-transparent text-xs outline-none border border-border/50 rounded-lg px-2 py-1 focus:border-primary transition-colors"
+                  aria-label="Set reminder"
+                />
+                {reminderAt && (
+                  <button
+                    type="button"
+                    onClick={() => setReminderAt("")}
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                    aria-label="Clear reminder"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Timestamps */}
+              {note.id && (
+                <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground/60 pt-1 border-t border-border/20">
+                  {note.createdAt && (
+                    <span>
+                      Created: {new Date(note.createdAt).toLocaleString()}
+                    </span>
+                  )}
+                  {note.updatedAt && (
+                    <span>
+                      Updated: {new Date(note.updatedAt).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </Modal>
+      )}
 
       {/* File preview modal — fullscreen, outside the note modal */}
       <FilePreviewModal

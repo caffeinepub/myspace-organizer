@@ -285,13 +285,19 @@ export default function RecordsPage() {
     resetTranscript,
   } = useSpeechRecognition();
   const lastTranscriptRef = useRef("");
+  // Track which field (add or edit) is receiving speech input
+  const activeSpeechTargetRef = useRef<"add" | "edit">("add");
 
   React.useEffect(() => {
     if (!transcript) return;
     const newPart = transcript.slice(lastTranscriptRef.current.length);
     if (!newPart) return;
     lastTranscriptRef.current = transcript;
-    setNewContent((prev) => prev + (prev ? " " : "") + newPart.trim());
+    if (activeSpeechTargetRef.current === "edit") {
+      setEditContent((prev) => prev + (prev ? " " : "") + newPart.trim());
+    } else {
+      setNewContent((prev) => prev + (prev ? " " : "") + newPart.trim());
+    }
   }, [transcript]);
 
   // ── helpers: tag / pin ────────────────────────────────────────────────────────
@@ -755,25 +761,36 @@ export default function RecordsPage() {
                 onClick={() => {
                   if (isListening) {
                     stopListening();
+                    resetTranscript();
+                    lastTranscriptRef.current = "";
                   } else {
+                    activeSpeechTargetRef.current = "add";
                     resetTranscript();
                     lastTranscriptRef.current = "";
                     startListening();
                   }
                 }}
                 className={`absolute bottom-2 right-2 p-1.5 rounded-lg transition-colors ${
-                  isListening
+                  isListening && activeSpeechTargetRef.current === "add"
                     ? "bg-red-100 text-red-600"
                     : "bg-muted text-muted-foreground hover:text-foreground"
                 }`}
-                title={isListening ? "Stop dictation" : "Dictate"}
+                title={
+                  isListening && activeSpeechTargetRef.current === "add"
+                    ? "Stop dictation"
+                    : "Dictate"
+                }
               >
-                {isListening ? <MicOff size={14} /> : <Mic size={14} />}
+                {isListening && activeSpeechTargetRef.current === "add" ? (
+                  <MicOff size={14} />
+                ) : (
+                  <Mic size={14} />
+                )}
               </button>
             )}
           </div>
           <div className="flex items-center justify-between mb-2">
-            {isListening && (
+            {isListening && activeSpeechTargetRef.current === "add" && (
               <p className="text-xs text-accent">🎙 Listening… speak now</p>
             )}
             <p className="text-xs text-muted-foreground/60 ml-auto">
@@ -1093,8 +1110,8 @@ export default function RecordsPage() {
         >
           {/* biome-ignore lint/a11y/useKeyWithClickEvents: stop-propagation wrapper */}
           <div
-            className="w-full md:max-w-4xl mx-0 md:mx-4 bg-card rounded-t-2xl md:rounded-2xl border border-border shadow-2xl flex flex-col"
-            style={{ maxHeight: "95vh" }}
+            className="w-full md:max-w-4xl mx-0 md:mx-4 bg-card rounded-t-2xl md:rounded-2xl border border-border shadow-2xl flex flex-col overflow-hidden"
+            style={{ maxHeight: "95dvh" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
@@ -1218,8 +1235,8 @@ export default function RecordsPage() {
         >
           {/* biome-ignore lint/a11y/useKeyWithClickEvents: stop-propagation wrapper */}
           <div
-            className="w-full md:max-w-4xl mx-0 md:mx-4 bg-card rounded-t-2xl md:rounded-2xl border border-border shadow-2xl flex flex-col"
-            style={{ maxHeight: "95vh" }}
+            className="w-full md:max-w-4xl mx-0 md:mx-4 bg-card rounded-t-2xl md:rounded-2xl border border-border shadow-2xl flex flex-col overflow-hidden"
+            style={{ maxHeight: "95dvh" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal header */}
@@ -1229,7 +1246,14 @@ export default function RecordsPage() {
               </h2>
               <button
                 type="button"
-                onClick={() => setEditRecord(null)}
+                onClick={() => {
+                  setEditRecord(null);
+                  if (isListening && activeSpeechTargetRef.current === "edit") {
+                    stopListening();
+                    resetTranscript();
+                    lastTranscriptRef.current = "";
+                  }
+                }}
                 className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
                 aria-label="Close"
               >
@@ -1238,11 +1262,11 @@ export default function RecordsPage() {
             </div>
 
             {/* Modal body */}
-            <div className="overflow-y-auto px-5 py-4 flex-1 space-y-3">
+            <div className="overflow-y-auto px-5 py-5 flex-1 space-y-4">
               <input
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full px-3 py-3 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
                 placeholder="Title"
               />
               {/* Tag selector */}
@@ -1262,13 +1286,60 @@ export default function RecordsPage() {
                   </button>
                 ))}
               </div>
-              <textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                rows={6}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent resize-none"
-                placeholder="Content..."
-              />
+              <div className="relative">
+                <textarea
+                  value={
+                    editContent +
+                    (isListening &&
+                    activeSpeechTargetRef.current === "edit" &&
+                    interimTranscript
+                      ? ` ${interimTranscript}`
+                      : "")
+                  }
+                  onChange={(e) => setEditContent(e.target.value)}
+                  rows={7}
+                  className="w-full px-3 py-3 rounded-lg border border-border bg-background text-sm text-foreground leading-relaxed focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                  placeholder="Content..."
+                />
+                {speechSupported && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isListening) {
+                        stopListening();
+                        resetTranscript();
+                        lastTranscriptRef.current = "";
+                      } else {
+                        activeSpeechTargetRef.current = "edit";
+                        resetTranscript();
+                        lastTranscriptRef.current = "";
+                        startListening();
+                      }
+                    }}
+                    className={`absolute bottom-2 right-2 p-1.5 rounded-lg transition-colors ${
+                      isListening && activeSpeechTargetRef.current === "edit"
+                        ? "bg-red-100 text-red-600"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                    title={
+                      isListening && activeSpeechTargetRef.current === "edit"
+                        ? "Stop dictation"
+                        : "Dictate"
+                    }
+                  >
+                    {isListening && activeSpeechTargetRef.current === "edit" ? (
+                      <MicOff size={14} />
+                    ) : (
+                      <Mic size={14} />
+                    )}
+                  </button>
+                )}
+              </div>
+              {isListening && activeSpeechTargetRef.current === "edit" && (
+                <p className="text-xs text-accent -mt-2">
+                  🎙 Listening… speak now
+                </p>
+              )}
               {/* Attachments — hidden inputs */}
               <input
                 ref={editAttachCameraRef}

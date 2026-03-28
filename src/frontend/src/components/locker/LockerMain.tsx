@@ -1,5 +1,16 @@
-import { Eye, EyeOff, File, Lock, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import {
+  ChevronDown,
+  Download,
+  Eye,
+  EyeOff,
+  File,
+  Lock,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useRef, useState } from "react";
 import { LockerEntryForm } from "./LockerEntryForm";
 import type { LockerEntry } from "./lockerStorage";
 import {
@@ -52,6 +63,76 @@ function formatDate(iso: string) {
     month: "short",
     year: "numeric",
   });
+}
+
+function getExportTimestamp(): string {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const min = String(now.getMinutes()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}_${hh}${min}`;
+}
+
+function downloadFile(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function entriesToTxt(entries: LockerEntry[]): string {
+  return entries
+    .map((e, i) => {
+      const lines = [
+        `--- Entry ${i + 1} ---`,
+        `Title: ${e.title}`,
+        `Type: ${TYPE_LABELS[e.type] ?? e.type}`,
+        `Created: ${formatDate(e.createdAt)}`,
+      ];
+      if (e.username) lines.push(`Username: ${e.username}`);
+      if (e.email) lines.push(`Email: ${e.email}`);
+      if (e.password) lines.push(`Password: ${e.password}`);
+      if (e.url) lines.push(`URL: ${e.url}`);
+      if (e.content) lines.push(`Note:\n${e.content}`);
+      if (e.attachments && e.attachments.length > 0) {
+        lines.push(
+          `Attachments: ${e.attachments.map((a) => a.name).join(", ")}`,
+        );
+      }
+      return lines.join("\n");
+    })
+    .join("\n\n");
+}
+
+function entriesToHtml(entries: LockerEntry[]): string {
+  const rows = entries
+    .map(
+      (e) => `
+    <div style="margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid #ccc;">
+      <h3 style="margin:0 0 8px;">${e.title} <span style="font-weight:normal;font-size:13px;color:#666;">(${TYPE_LABELS[e.type] ?? e.type})</span></h3>
+      <table style="border-collapse:collapse;width:100%;font-size:13px;">
+        <tr><td style="color:#888;width:120px;">Created</td><td>${formatDate(e.createdAt)}</td></tr>
+        ${e.username ? `<tr><td style="color:#888;">Username</td><td>${e.username}</td></tr>` : ""}
+        ${e.email ? `<tr><td style="color:#888;">Email</td><td>${e.email}</td></tr>` : ""}
+        ${e.password ? `<tr><td style="color:#888;">Password</td><td>${e.password}</td></tr>` : ""}
+        ${e.url ? `<tr><td style="color:#888;">URL</td><td><a href="${e.url}">${e.url}</a></td></tr>` : ""}
+        ${e.content ? `<tr><td style="color:#888;vertical-align:top;">Note</td><td style="white-space:pre-wrap;">${e.content}</td></tr>` : ""}
+        ${e.attachments && e.attachments.length > 0 ? `<tr><td style="color:#888;">Attachments</td><td>${e.attachments.map((a) => a.name).join(", ")}</td></tr>` : ""}
+      </table>
+    </div>`,
+    )
+    .join("");
+  return `<html><head><meta charset="utf-8"><title>Locker Export</title></head><body style="font-family:sans-serif;max-width:700px;margin:40px auto;">
+<h2 style="margin-bottom:24px;">My Locker — Exported ${new Date().toLocaleDateString()}</h2>
+${rows}
+</body></html>`;
 }
 
 function EntryCard({
@@ -218,6 +299,12 @@ function EntryCard({
   );
 }
 
+type ExportStep =
+  | { kind: "idle" }
+  | { kind: "chooseSecurity"; format: "txt" | "json" | "doc" }
+  | { kind: "pinPrompt"; format: "txt" | "json" | "doc" }
+  | { kind: "importPinPrompt"; data: string };
+
 export function LockerMain({ onLock }: Props) {
   const [entries, setEntries] = useState<LockerEntry[]>(getEntries);
   const [settings, setSettings] = useState(getSettings);
@@ -231,6 +318,15 @@ export function LockerMain({ onLock }: Props) {
   const [deletePin, setDeletePin] = useState("");
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
+
+  // Export/Import state
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [exportStep, setExportStep] = useState<ExportStep>({ kind: "idle" });
+  const [exportPin, setExportPin] = useState("");
+  const [exportPassword, setExportPassword] = useState("");
+  const [exportError, setExportError] = useState("");
+  const [importMessage, setImportMessage] = useState("");
+  const importFileRef = useRef<HTMLInputElement>(null);
 
   const handleSave = (entry: LockerEntry) => {
     const updated = editingEntry
@@ -273,6 +369,142 @@ export function LockerMain({ onLock }: Props) {
     setSettings(s);
   };
 
+  // --- Export logic ---
+  const startExport = (format: "txt" | "json" | "doc") => {
+    setShowExportDropdown(false);
+    setExportPin("");
+    setExportPassword("");
+    setExportError("");
+    setExportStep({ kind: "chooseSecurity", format });
+  };
+
+  const doExport = (format: "txt" | "json" | "doc", encrypted: boolean) => {
+    const ts = getExportTimestamp();
+    if (format === "txt") {
+      const content = encrypted
+        ? `ENCRYPTED:\n${btoa(JSON.stringify(entries))}`
+        : entriesToTxt(entries);
+      downloadFile(content, `locker_${ts}.txt`, "text/plain");
+    } else if (format === "json") {
+      const obj = encrypted
+        ? { encrypted: true, data: btoa(JSON.stringify(entries)) }
+        : entries;
+      downloadFile(
+        JSON.stringify(obj, null, 2),
+        `locker_${ts}.json`,
+        "application/json",
+      );
+    } else {
+      const html = entriesToHtml(entries);
+      downloadFile(html, `locker_${ts}.doc`, "application/msword");
+    }
+    setExportStep({ kind: "idle" });
+  };
+
+  const handleChooseSecurity = (encrypted: boolean) => {
+    if (exportStep.kind !== "chooseSecurity") return;
+    const { format } = exportStep;
+    if (encrypted) {
+      setExportStep({ kind: "pinPrompt", format });
+    } else {
+      doExport(format, false);
+    }
+  };
+
+  const handleExportPinConfirm = () => {
+    if (exportStep.kind !== "pinPrompt") return;
+    if (!exportPin) {
+      setExportError("Please enter your PIN.");
+      return;
+    }
+    if (!verifyCredentials(exportPin, exportPassword)) {
+      setExportError("Incorrect PIN or password.");
+      return;
+    }
+    doExport(exportStep.format, true);
+    setExportPin("");
+    setExportPassword("");
+    setExportError("");
+  };
+
+  // --- Import logic ---
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset input so same file can be re-selected
+    e.target.value = "";
+
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (ext !== "json") {
+      setImportMessage(
+        "TXT/Word files cannot be re-imported. Please use JSON format for import.",
+      );
+      setTimeout(() => setImportMessage(""), 5000);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed && parsed.encrypted === true && parsed.data) {
+          // Ask for PIN to decrypt
+          setExportPin("");
+          setExportPassword("");
+          setExportError("");
+          setExportStep({ kind: "importPinPrompt", data: parsed.data });
+        } else if (Array.isArray(parsed)) {
+          mergeImportedEntries(parsed);
+        } else {
+          setImportMessage("Invalid file format.");
+          setTimeout(() => setImportMessage(""), 4000);
+        }
+      } catch {
+        setImportMessage("Failed to parse file.");
+        setTimeout(() => setImportMessage(""), 4000);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImportPinConfirm = () => {
+    if (exportStep.kind !== "importPinPrompt") return;
+    if (!exportPin) {
+      setExportError("Please enter your PIN.");
+      return;
+    }
+    if (!verifyCredentials(exportPin, exportPassword)) {
+      setExportError("Incorrect PIN or password.");
+      return;
+    }
+    try {
+      const decoded = JSON.parse(atob(exportStep.data)) as LockerEntry[];
+      mergeImportedEntries(decoded);
+      setExportStep({ kind: "idle" });
+      setExportPin("");
+      setExportPassword("");
+      setExportError("");
+    } catch {
+      setExportError("Failed to decrypt file.");
+    }
+  };
+
+  const mergeImportedEntries = (imported: LockerEntry[]) => {
+    const fresh = imported.map((e) => ({
+      ...e,
+      id: crypto.randomUUID(),
+    }));
+    const merged = [...entries, ...fresh];
+    saveEntries(merged);
+    setEntries(merged);
+    setExportStep({ kind: "idle" });
+    setImportMessage(
+      `${fresh.length} entr${fresh.length === 1 ? "y" : "ies"} imported.`,
+    );
+    setTimeout(() => setImportMessage(""), 4000);
+  };
+
   if (showForm) {
     return (
       <div className="flex items-start justify-center w-full">
@@ -288,6 +520,11 @@ export function LockerMain({ onLock }: Props) {
     );
   }
 
+  const isExportModalOpen =
+    exportStep.kind === "chooseSecurity" ||
+    exportStep.kind === "pinPrompt" ||
+    exportStep.kind === "importPinPrompt";
+
   return (
     <div
       className="bg-card rounded-xl sm:rounded-2xl border border-border/50 w-full max-w-lg flex flex-col overflow-hidden"
@@ -301,7 +538,58 @@ export function LockerMain({ onLock }: Props) {
         <h2 className="font-semibold text-base flex items-center gap-2">
           <Lock className="w-4 h-4 text-primary shrink-0" /> My Locker
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-wrap justify-end">
+          {/* Import button */}
+          <button
+            type="button"
+            onClick={() => importFileRef.current?.click()}
+            className="flex items-center gap-1 px-2 py-1.5 bg-muted rounded-lg text-xs font-medium border border-border/50 hover:bg-muted/80 transition-colors"
+            aria-label="Import locker entries"
+            data-ocid="locker.upload_button"
+          >
+            <Upload className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline">Import</span>
+          </button>
+          <input
+            ref={importFileRef}
+            type="file"
+            accept=".txt,.json,.doc,.docx"
+            className="hidden"
+            onChange={handleImportFile}
+            aria-label="Import file picker"
+          />
+
+          {/* Export button with dropdown */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setShowExportDropdown((v) => !v)}
+              className="flex items-center gap-1 px-2 py-1.5 bg-muted rounded-lg text-xs font-medium border border-border/50 hover:bg-muted/80 transition-colors"
+              aria-label="Export locker entries"
+              data-ocid="locker.button"
+            >
+              <Download className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Export</span>
+              <ChevronDown className="w-3 h-3 shrink-0" />
+            </button>
+            {showExportDropdown && (
+              <div className="absolute right-0 top-full mt-1 bg-card border border-border/50 rounded-xl shadow-lg z-20 min-w-[110px] py-1">
+                {(["txt", "json", "doc"] as const).map((fmt) => (
+                  <button
+                    key={fmt}
+                    type="button"
+                    onClick={() => startExport(fmt)}
+                    className="w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors"
+                  >
+                    {fmt === "txt" && "TXT"}
+                    {fmt === "json" && "JSON"}
+                    {fmt === "doc" && "Word (.doc)"}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <select
             value={settings.timeoutMinutes}
             onChange={(e) => handleTimeoutChange(Number(e.target.value))}
@@ -322,10 +610,21 @@ export function LockerMain({ onLock }: Props) {
             aria-label="Lock locker"
             data-ocid="locker.toggle"
           >
-            <Lock className="w-3.5 h-3.5" /> Lock
+            <Lock className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Lock</span>
           </button>
         </div>
       </div>
+
+      {/* Import message */}
+      {importMessage && (
+        <div
+          className="mx-3 mt-2 px-3 py-2 bg-primary/10 text-primary text-xs rounded-lg border border-primary/20"
+          data-ocid="locker.success_state"
+        >
+          {importMessage}
+        </div>
+      )}
 
       {/* Entries list — scrollable area */}
       <div
@@ -450,6 +749,155 @@ export function LockerMain({ onLock }: Props) {
                 Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Export / Import PIN Dialog */}
+      {isExportModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-card rounded-2xl border border-border/50 p-6 max-w-sm w-full shadow-xl">
+            {exportStep.kind === "chooseSecurity" && (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <Download className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold text-base">Export as</h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-5">
+                  Choose whether to export your data as plain text or encrypted
+                  (base64). Encrypted exports require your PIN to import.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleChooseSecurity(false)}
+                    className="flex-1 px-4 py-2.5 rounded-lg border border-border/50 text-sm hover:bg-muted transition-colors font-medium"
+                    data-ocid="locker.cancel_button"
+                  >
+                    Plain
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleChooseSecurity(true)}
+                    className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                    data-ocid="locker.confirm_button"
+                  >
+                    Encrypted
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setExportStep({ kind: "idle" })}
+                  className="w-full mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+
+            {(exportStep.kind === "pinPrompt" ||
+              exportStep.kind === "importPinPrompt") && (
+              <>
+                <div className="flex items-center gap-2 mb-3">
+                  <Lock className="w-5 h-5 text-primary" />
+                  <h3 className="font-semibold text-base">
+                    {exportStep.kind === "pinPrompt"
+                      ? "Confirm PIN to Encrypt"
+                      : "Enter PIN to Decrypt"}
+                  </h3>
+                </div>
+                <p className="text-xs text-muted-foreground mb-4">
+                  {exportStep.kind === "pinPrompt"
+                    ? "Verify your Locker PIN before exporting encrypted data."
+                    : "This file is encrypted. Enter your Locker PIN to import it."}
+                </p>
+                <div className="space-y-3">
+                  <div>
+                    <label
+                      htmlFor="exp-pin"
+                      className="text-xs font-medium block mb-1"
+                    >
+                      PIN
+                    </label>
+                    <input
+                      id="exp-pin"
+                      type="number"
+                      value={exportPin}
+                      onChange={(e) => {
+                        setExportPin(e.target.value.slice(0, 6));
+                        setExportError("");
+                      }}
+                      placeholder="Enter PIN"
+                      inputMode="numeric"
+                      className="w-full bg-muted/50 rounded-lg p-2.5 text-sm border border-border/50 outline-none focus:border-primary transition-colors"
+                      onKeyDown={(e) =>
+                        e.key === "Enter" &&
+                        (exportStep.kind === "pinPrompt"
+                          ? handleExportPinConfirm()
+                          : handleImportPinConfirm())
+                      }
+                    />
+                  </div>
+                  {hasPasswordSet() && (
+                    <div>
+                      <label
+                        htmlFor="exp-pwd"
+                        className="text-xs font-medium block mb-1"
+                      >
+                        Password
+                      </label>
+                      <input
+                        id="exp-pwd"
+                        type="password"
+                        value={exportPassword}
+                        onChange={(e) => {
+                          setExportPassword(e.target.value);
+                          setExportError("");
+                        }}
+                        placeholder="Enter password"
+                        className="w-full bg-muted/50 rounded-lg p-2.5 text-sm border border-border/50 outline-none focus:border-primary transition-colors"
+                        onKeyDown={(e) =>
+                          e.key === "Enter" &&
+                          (exportStep.kind === "pinPrompt"
+                            ? handleExportPinConfirm()
+                            : handleImportPinConfirm())
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+                {exportError && (
+                  <p className="mt-3 text-xs text-destructive p-2 bg-destructive/10 rounded-lg">
+                    {exportError}
+                  </p>
+                )}
+                <div className="flex gap-2 mt-5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExportStep({ kind: "idle" });
+                      setExportPin("");
+                      setExportPassword("");
+                      setExportError("");
+                    }}
+                    className="flex-1 px-4 py-2.5 rounded-lg border border-border/50 text-sm hover:bg-muted transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={
+                      exportStep.kind === "pinPrompt"
+                        ? handleExportPinConfirm
+                        : handleImportPinConfirm
+                    }
+                    className="flex-1 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                  >
+                    {exportStep.kind === "pinPrompt" ? "Export" : "Import"}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
