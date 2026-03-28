@@ -599,6 +599,20 @@ export function NoteModal({
               </div>
             )}
 
+            {/* Selected labels display */}
+            {selectedLabels.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {selectedLabels.map((lbl) => (
+                  <span
+                    key={lbl}
+                    className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 font-medium"
+                  >
+                    🏷️ {lbl}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {/* Title */}
             <input
               ref={titleRef}
