@@ -221,11 +221,12 @@ export function NotesPage({
             <button
               type="button"
               onClick={handleImportClick}
-              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors text-muted-foreground font-medium"
               aria-label="Import notes"
               title="Import Notes"
             >
-              <Upload className="w-4 h-4" />
+              <Upload className="w-3.5 h-3.5" />
+              <span>Import</span>
             </button>
             <input
               ref={importInputRef}
@@ -240,11 +241,12 @@ export function NotesPage({
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+                  className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors text-muted-foreground font-medium"
                   aria-label="Export all notes"
                   title="Export All Notes"
                 >
-                  <FileDown className="w-4 h-4" />
+                  <FileDown className="w-3.5 h-3.5" />
+                  <span>Export</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">

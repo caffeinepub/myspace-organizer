@@ -12,7 +12,6 @@ export function ImageUploadPicker({
   isOpen,
   onClose,
   onCameraClick,
-  onGalleryClick,
   onFileClick,
 }: ImageUploadPickerProps) {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -51,38 +50,29 @@ export function ImageUploadPicker({
     <div
       ref={menuRef}
       role="menu"
-      aria-label="Image upload options"
+      aria-label="Attachment options"
       className="absolute z-50 mt-1 w-52 bg-card border border-border rounded-xl shadow-md overflow-hidden"
     >
       <button
         type="button"
         role="menuitem"
         onClick={() => handleOption(onCameraClick)}
-        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors text-left"
+        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors text-left font-medium"
         aria-label="Open camera"
       >
         <span className="text-base leading-none">📷</span>
-        <span>Open Camera</span>
+        <span>Camera</span>
       </button>
-      <button
-        type="button"
-        role="menuitem"
-        onClick={() => handleOption(onGalleryClick)}
-        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors text-left"
-        aria-label="Select from gallery"
-      >
-        <span className="text-base leading-none">🖼</span>
-        <span>Select from Gallery</span>
-      </button>
+      <div className="border-t border-border/60" />
       <button
         type="button"
         role="menuitem"
         onClick={() => handleOption(onFileClick)}
-        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors text-left"
-        aria-label="Upload documents or files"
+        className="w-full flex items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors text-left font-medium"
+        aria-label="Add files"
       >
         <span className="text-base leading-none">📁</span>
-        <span>Upload Documents / Files</span>
+        <span>Add Files</span>
       </button>
     </div>
   );

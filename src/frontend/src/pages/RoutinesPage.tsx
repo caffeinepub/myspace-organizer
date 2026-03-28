@@ -695,11 +695,12 @@ export default function RoutinesPage() {
             type="button"
             onClick={handleImportClick}
             disabled={isImporting}
-            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground disabled:opacity-50"
+            className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors text-muted-foreground font-medium disabled:opacity-50"
             aria-label="Import routines"
             title="Import Routines"
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-3.5 h-3.5" />
+            <span>Import</span>
           </button>
 
           {/* Export dropdown — same style as Notes */}
@@ -707,11 +708,12 @@ export default function RoutinesPage() {
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+                className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors text-muted-foreground font-medium"
                 aria-label="Export routines"
                 title="Export Routines"
               >
-                <FileDown className="w-4 h-4" />
+                <FileDown className="w-3.5 h-3.5" />
+                <span>Export</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
@@ -1214,7 +1216,7 @@ export default function RoutinesPage() {
                     <div
                       key={af.key}
                       className="relative group rounded-lg overflow-hidden border border-border/50 bg-muted/20"
-                      style={{ maxWidth: isImg ? 100 : undefined }}
+                      style={{ maxWidth: isImg ? 120 : undefined }}
                     >
                       {isImg ? (
                         <button
@@ -1228,7 +1230,7 @@ export default function RoutinesPage() {
                             src={af.url}
                             alt={af.name}
                             className="w-full h-auto block"
-                            style={{ maxHeight: 80, objectFit: "contain" }}
+                            style={{ maxHeight: 100, objectFit: "contain" }}
                           />
                         </button>
                       ) : (
@@ -1254,7 +1256,7 @@ export default function RoutinesPage() {
                       <button
                         type="button"
                         onClick={() => handleRemoveRoutineAttachment(af.key)}
-                        className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-destructive"
+                        className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-destructive"
                         aria-label={`Remove ${af.name}`}
                       >
                         <X className="w-2.5 h-2.5" />
@@ -1265,35 +1267,54 @@ export default function RoutinesPage() {
               </div>
             )}
 
-            <div className="relative inline-block">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onClick={() => setShowAttachPicker((prev) => !prev)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border hover:border-primary/50 hover:bg-muted/30 transition-colors text-sm text-muted-foreground"
+                onClick={() => setShowAttachPicker((v) => !v)}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
                 aria-label="Add attachment"
                 aria-expanded={showAttachPicker}
                 data-ocid="routines.upload_button"
               >
-                <Paperclip className="w-4 h-4" />
-                <span>Add Attachment</span>
+                <Paperclip className="w-3.5 h-3.5" />
+                Add Attachment
               </button>
               {showAttachPicker && (
-                <ImageUploadPicker
-                  isOpen={showAttachPicker}
-                  onClose={() => setShowAttachPicker(false)}
-                  onCameraClick={() => {
-                    setShowAttachPicker(false);
-                    attachCameraRef.current?.click();
-                  }}
-                  onGalleryClick={() => {
-                    setShowAttachPicker(false);
-                    attachGalleryRef.current?.click();
-                  }}
-                  onFileClick={() => {
-                    setShowAttachPicker(false);
-                    attachFileRef.current?.click();
-                  }}
-                />
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAttachPicker(false);
+                      attachCameraRef.current?.click();
+                    }}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                    aria-label="Open camera"
+                  >
+                    <span>📷</span> Camera
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAttachPicker(false);
+                      attachGalleryRef.current?.click();
+                    }}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                    aria-label="Select from gallery"
+                  >
+                    <span>🖼</span> Gallery
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAttachPicker(false);
+                      attachFileRef.current?.click();
+                    }}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                    aria-label="Upload files"
+                  >
+                    <span>📁</span> Files
+                  </button>
+                </>
               )}
             </div>
           </div>

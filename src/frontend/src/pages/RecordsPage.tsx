@@ -8,9 +8,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   BookOpen,
-  Camera,
-  Download,
   Edit2,
+  FileDown,
   FileJson,
   FileText,
   FileType,
@@ -27,16 +26,10 @@ import {
   X,
 } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useCamera } from "../camera/useCamera";
 import { FilePreviewModal } from "../components/common/FilePreviewModal";
 import type { AttachedFile } from "../components/common/FilePreviewModal";
-import { ImageUploadPicker } from "../components/common/ImageUploadPicker";
 import type { Record as DbRecord } from "../db/schema";
-import {
-  compressRecordImage,
-  getRecordImage,
-  saveRecordImage,
-} from "../hooks/useRecordImages";
+import { getRecordImage } from "../hooks/useRecordImages";
 import { useRecords } from "../hooks/useRecords";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { showErrorToast, showSuccessToast } from "../store/toastStore";
@@ -210,84 +203,6 @@ function groupByDate(
   }));
 }
 
-// ── CameraModal sub-component (same pattern as RoutinesPage) ──────────────────
-interface CameraModalProps {
-  onCapture: (file: File) => void;
-  onClose: () => void;
-}
-
-function CameraModal({ onCapture, onClose }: CameraModalProps) {
-  const {
-    isActive,
-    isLoading,
-    error,
-    startCamera,
-    capturePhoto,
-    videoRef,
-    canvasRef,
-  } = useCamera({ facingMode: "environment" });
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: startCamera is stable and should only run on mount
-  useEffect(() => {
-    startCamera();
-  }, []);
-
-  const handleCapture = async () => {
-    const file = await capturePhoto();
-    if (file) {
-      onCapture(file);
-      onClose();
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[100] bg-black/80 flex flex-col items-center justify-center p-4">
-      <div className="bg-card rounded-xl overflow-hidden w-full max-w-sm">
-        <div className="relative bg-black" style={{ minHeight: 240 }}>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-auto"
-            style={{ minHeight: 240, display: "block" }}
-          />
-          <canvas ref={canvasRef} className="hidden" />
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-              <span className="text-white text-sm">Starting camera…</span>
-            </div>
-          )}
-          {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/70 p-4">
-              <span className="text-red-400 text-sm text-center">
-                {error.message}
-              </span>
-            </div>
-          )}
-        </div>
-        <div className="flex gap-2 p-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-muted transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleCapture}
-            disabled={!isActive || isLoading}
-            className="flex-1 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            Capture
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function RecordsPage() {
   const {
@@ -326,16 +241,13 @@ export default function RecordsPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [newTag, setNewTag] = useState<string>("");
-  const [addImage, setAddImage] = useState<string | null>(null);
-  const [addImageLoading, setAddImageLoading] = useState(false);
   const [addAttachments, setAddAttachments] = useState<
     RecordStoredAttachment[]
   >([]);
-  const [showAddImagePicker, setShowAddImagePicker] = useState(false);
-  const [showAddCameraModal, setShowAddCameraModal] = useState(false);
-  const addGalleryInputRef = useRef<HTMLInputElement>(null);
-  const addFileInputRef = useRef<HTMLInputElement>(null);
-  const addImagePickerAnchorRef = useRef<HTMLDivElement>(null);
+  const [showAddAttachPicker, setShowAddAttachPicker] = useState(false);
+  const addAttachCameraRef = useRef<HTMLInputElement>(null);
+  const addAttachGalleryRef = useRef<HTMLInputElement>(null);
+  const addAttachFileRef = useRef<HTMLInputElement>(null);
 
   // ── edit state ────────────────────────────────────────────────────────────────
   const [editRecord, setEditRecord] = useState<DbRecord | null>(null);
@@ -345,11 +257,10 @@ export default function RecordsPage() {
   const [editAttachments, setEditAttachments] = useState<
     RecordStoredAttachment[]
   >([]);
-  const [showEditImagePicker, setShowEditImagePicker] = useState(false);
-  const [showEditCameraModal, setShowEditCameraModal] = useState(false);
-  const editGalleryInputRef = useRef<HTMLInputElement>(null);
-  const editFileInputRef = useRef<HTMLInputElement>(null);
-  const editImagePickerAnchorRef = useRef<HTMLDivElement>(null);
+  const [showEditAttachPicker, setShowEditAttachPicker] = useState(false);
+  const editAttachCameraRef = useRef<HTMLInputElement>(null);
+  const editAttachGalleryRef = useRef<HTMLInputElement>(null);
+  const editAttachFileRef = useRef<HTMLInputElement>(null);
 
   // ── view state ────────────────────────────────────────────────────────────────
   const [viewRecord, setViewRecord] = useState<DbRecord | null>(null);
@@ -397,131 +308,98 @@ export default function RecordsPage() {
     savePinnedIds(next);
   };
 
-  // ── image helpers ─────────────────────────────────────────────────────────────
-  const processImageFile = useCallback(
-    async (
-      file: File,
-      setImg: (d: string | null) => void,
-      setLoading: (b: boolean) => void,
-    ) => {
-      setLoading(true);
-      try {
-        const dataUrl = await compressRecordImage(file);
-        setImg(dataUrl);
-      } catch {
-        showErrorToast("Failed to process image");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
-
-  const handleAddGalleryChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      await processImageFile(file, setAddImage, setAddImageLoading);
-      if (e.target) e.target.value = "";
-    },
-    [processImageFile],
-  );
-
-  const handleAddFileChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
-      if (!files || files.length === 0) return;
-      const newAttachments: RecordStoredAttachment[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const f = files[i];
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error("read error"));
-          reader.readAsDataURL(f);
-        });
-        newAttachments.push({
-          key: `rec-add-${Date.now()}-${i}`,
-          name: f.name,
-          mimeType: f.type || "application/octet-stream",
-          dataUrl,
-          size: f.size,
-        });
-      }
-      setAddAttachments((prev) => [...prev, ...newAttachments]);
-      if (e.target) e.target.value = "";
-    },
-    [],
-  );
-
-  const handleAddCameraCapture = useCallback(
-    async (file: File) => {
-      await processImageFile(file, setAddImage, setAddImageLoading);
-    },
-    [processImageFile],
-  );
-
-  const handleEditGalleryChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const dataUrl = await compressRecordImage(file);
-      // Store as attachment so we can preview it
-      setEditAttachments((prev) => [
-        ...prev,
-        {
-          key: `rec-edit-${Date.now()}`,
-          name: file.name,
-          mimeType: file.type,
-          dataUrl,
-          size: file.size,
-        },
-      ]);
-      if (e.target) e.target.value = "";
-    },
-    [],
-  );
-
-  const handleEditFileChange = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const files = e.target.files;
-      if (!files || files.length === 0) return;
-      const newAttachments: RecordStoredAttachment[] = [];
-      for (let i = 0; i < files.length; i++) {
-        const f = files[i];
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error("read error"));
-          reader.readAsDataURL(f);
-        });
-        newAttachments.push({
-          key: `rec-edit-${Date.now()}-${i}`,
-          name: f.name,
-          mimeType: f.type || "application/octet-stream",
-          dataUrl,
-          size: f.size,
-        });
-      }
-      setEditAttachments((prev) => [...prev, ...newAttachments]);
-      if (e.target) e.target.value = "";
-    },
-    [],
-  );
-
-  const handleEditCameraCapture = useCallback(async (file: File) => {
-    const dataUrl = await compressRecordImage(file);
-    setEditAttachments((prev) => [
-      ...prev,
-      {
-        key: `rec-edit-cam-${Date.now()}`,
-        name: "camera-capture.jpg",
-        mimeType: "image/jpeg",
+  // ── attachment helpers ───────────────────────────────────────────────────────
+  const handleAddAttachFiles = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const newAttachments: RecordStoredAttachment[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("read error"));
+        reader.readAsDataURL(f);
+      });
+      newAttachments.push({
+        key: `rec-add-${Date.now()}-${i}`,
+        name: f.name,
+        mimeType: f.type || "application/octet-stream",
         dataUrl,
-        size: file.size,
-      },
-    ]);
+        size: f.size,
+      });
+    }
+    setAddAttachments((prev) => [...prev, ...newAttachments]);
   }, []);
+
+  const handleAddAttachCameraChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      await handleAddAttachFiles(e.target.files);
+      if (e.target) e.target.value = "";
+    },
+    [handleAddAttachFiles],
+  );
+
+  const handleAddAttachGalleryChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      await handleAddAttachFiles(e.target.files);
+      if (e.target) e.target.value = "";
+    },
+    [handleAddAttachFiles],
+  );
+
+  const handleAddAttachFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      await handleAddAttachFiles(e.target.files);
+      if (e.target) e.target.value = "";
+    },
+    [handleAddAttachFiles],
+  );
+
+  const handleEditAttachFiles = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const newAttachments: RecordStoredAttachment[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("read error"));
+        reader.readAsDataURL(f);
+      });
+      newAttachments.push({
+        key: `rec-edit-${Date.now()}-${i}`,
+        name: f.name,
+        mimeType: f.type || "application/octet-stream",
+        dataUrl,
+        size: f.size,
+      });
+    }
+    setEditAttachments((prev) => [...prev, ...newAttachments]);
+  }, []);
+
+  const handleEditAttachCameraChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      await handleEditAttachFiles(e.target.files);
+      if (e.target) e.target.value = "";
+    },
+    [handleEditAttachFiles],
+  );
+
+  const handleEditAttachGalleryChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      await handleEditAttachFiles(e.target.files);
+      if (e.target) e.target.value = "";
+    },
+    [handleEditAttachFiles],
+  );
+
+  const handleEditAttachFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      await handleEditAttachFiles(e.target.files);
+      if (e.target) e.target.value = "";
+    },
+    [handleEditAttachFiles],
+  );
 
   // ── view record ────────────────────────────────────────────────────────────────
   const handleViewRecord = useCallback((record: DbRecord) => {
@@ -552,7 +430,6 @@ export default function RecordsPage() {
         all.sort((a, b) => b.createdAt - a.createdAt);
         const newest = all[0];
         if (newest && newest.id !== undefined) {
-          if (addImage) saveRecordImage(newest.id, addImage);
           if (newTag) setTag(newest.id, newTag);
           if (addAttachments.length > 0)
             saveAttachmentsFor(newest.id, addAttachments);
@@ -565,7 +442,6 @@ export default function RecordsPage() {
     setNewTitle("");
     setNewContent("");
     setNewTag("");
-    setAddImage(null);
     setAddAttachments([]);
     setShowAdd(false);
     if (isListening) stopListening();
@@ -689,23 +565,25 @@ export default function RecordsPage() {
           <button
             type="button"
             onClick={() => importInputRef.current?.click()}
-            className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+            className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors text-muted-foreground font-medium"
             aria-label="Import records"
             title="Import Records"
             data-ocid="records.upload_button"
           >
-            <Upload className="w-4 h-4" />
+            <Upload className="w-3.5 h-3.5" />
+            <span>Import</span>
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+                className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-border hover:bg-muted transition-colors text-muted-foreground font-medium"
                 aria-label="Export all records"
                 title="Export All Records"
                 data-ocid="records.secondary_button"
               >
-                <Download className="w-4 h-4" />
+                <FileDown className="w-3.5 h-3.5" />
+                <span>Export</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -863,99 +741,152 @@ export default function RecordsPage() {
             </p>
           </div>
 
-          {/* Image + attachments row */}
+          {/* Attachments — hidden inputs */}
+          <input
+            ref={addAttachCameraRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            multiple
+            className="hidden"
+            onChange={handleAddAttachCameraChange}
+          />
+          <input
+            ref={addAttachGalleryRef}
+            type="file"
+            accept="*/*"
+            multiple
+            className="hidden"
+            onChange={handleAddAttachGalleryChange}
+          />
+          <input
+            ref={addAttachFileRef}
+            type="file"
+            accept="*/*"
+            multiple
+            className="hidden"
+            onChange={handleAddAttachFileChange}
+          />
+
+          {/* Attachment list */}
+          {addAttachments.length > 0 && (
+            <div className="space-y-2 mt-1">
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+                Attachments ({addAttachments.length})
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {addAttachments.map((att, idx) => {
+                  const isImg = att.mimeType.startsWith("image/");
+                  const isVid = att.mimeType.startsWith("video/");
+                  return (
+                    <div
+                      key={att.key}
+                      className="relative group rounded-lg overflow-hidden border border-border/50 bg-muted/20"
+                      style={{ maxWidth: isImg ? 120 : undefined }}
+                    >
+                      {isImg ? (
+                        <button
+                          type="button"
+                          onClick={() => openFilePreview(att)}
+                          className="block w-full"
+                          aria-label={`Preview ${att.name}`}
+                          title={att.name}
+                        >
+                          <img
+                            src={att.dataUrl}
+                            alt={att.name}
+                            className="w-full h-auto block"
+                            style={{ maxHeight: 100, objectFit: "contain" }}
+                          />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openFilePreview(att)}
+                          className="flex items-center gap-2 px-2 py-1.5 text-xs text-foreground hover:bg-muted transition-colors w-full text-left"
+                          aria-label={`Preview or download ${att.name}`}
+                          title={att.name}
+                        >
+                          <span className="text-base leading-none shrink-0">
+                            {isVid
+                              ? "🎬"
+                              : att.mimeType === "application/pdf"
+                                ? "📄"
+                                : "📎"}
+                          </span>
+                          <span className="truncate max-w-[120px]">
+                            {att.name}
+                          </span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAddAttachments((prev) =>
+                            prev.filter((_, i) => i !== idx),
+                          )
+                        }
+                        className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-destructive"
+                        aria-label={`Remove ${att.name}`}
+                      >
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Add Attachment inline picker */}
           <div className="flex flex-wrap items-center gap-2 mt-1">
-            {/* Image picker */}
-            <div className="relative" ref={addImagePickerAnchorRef}>
-              <button
-                type="button"
-                onClick={() => setShowAddImagePicker((v) => !v)}
-                disabled={addImageLoading}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg border border-border bg-background text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-              >
-                <Camera size={13} />
-                {addImageLoading ? "Processing…" : "Add Image"}
-              </button>
-              <input
-                ref={addGalleryInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAddGalleryChange}
-              />
-              <ImageUploadPicker
-                isOpen={showAddImagePicker}
-                onClose={() => setShowAddImagePicker(false)}
-                onCameraClick={() => setShowAddCameraModal(true)}
-                onGalleryClick={() => addGalleryInputRef.current?.click()}
-                onFileClick={() => addGalleryInputRef.current?.click()}
-              />
-            </div>
-
-            {/* File attachment */}
-            <div className="relative">
-              <input
-                ref={addFileInputRef}
-                type="file"
-                accept="*/*"
-                multiple
-                className="hidden"
-                onChange={handleAddFileChange}
-              />
-              <button
-                type="button"
-                onClick={() => addFileInputRef.current?.click()}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg border border-border bg-background text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Paperclip size={13} /> Attach Files
-              </button>
-            </div>
-
-            {/* Image preview */}
-            {addImage && (
-              <div className="relative">
-                <img
-                  src={addImage}
-                  alt="preview"
-                  className="h-12 w-12 object-cover rounded-lg border border-border"
-                />
+            <button
+              type="button"
+              onClick={() => setShowAddAttachPicker((v) => !v)}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+              aria-label="Add attachment"
+              aria-expanded={showAddAttachPicker}
+            >
+              <Paperclip size={13} />
+              Add Attachment
+            </button>
+            {showAddAttachPicker && (
+              <>
                 <button
                   type="button"
-                  onClick={() => setAddImage(null)}
-                  className="absolute -top-1 -right-1 bg-background border border-border rounded-full p-0.5 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    setShowAddAttachPicker(false);
+                    addAttachCameraRef.current?.click();
+                  }}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                  aria-label="Open camera"
                 >
-                  <X size={10} />
+                  <span>📷</span>
                 </button>
-              </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddAttachPicker(false);
+                    addAttachGalleryRef.current?.click();
+                  }}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                  aria-label="Select from gallery"
+                >
+                  <span>🖼</span> Gallery
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddAttachPicker(false);
+                    addAttachFileRef.current?.click();
+                  }}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                  aria-label="Upload files"
+                >
+                  <span>📁</span> Files
+                </button>
+              </>
             )}
-
-            {/* Attachment previews */}
-            {addAttachments.map((att, idx) => (
-              <div key={att.key} className="relative">
-                {att.mimeType.startsWith("image/") ? (
-                  <img
-                    src={att.dataUrl}
-                    alt={att.name}
-                    className="h-12 w-12 object-cover rounded-lg border border-border"
-                  />
-                ) : (
-                  <div className="h-12 w-12 rounded-lg border border-border bg-muted flex items-center justify-center">
-                    <Paperclip size={16} className="text-muted-foreground" />
-                  </div>
-                )}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setAddAttachments((prev) =>
-                      prev.filter((_, i) => i !== idx),
-                    )
-                  }
-                  className="absolute -top-1 -right-1 bg-background border border-border rounded-full p-0.5 text-muted-foreground hover:text-foreground"
-                >
-                  <X size={10} />
-                </button>
-              </div>
-            ))}
           </div>
 
           <div className="flex gap-2 mt-3">
@@ -975,7 +906,6 @@ export default function RecordsPage() {
                 setNewTitle("");
                 setNewContent("");
                 setNewTag("");
-                setAddImage(null);
                 setAddAttachments([]);
                 if (isListening) stopListening();
                 resetTranscript();
@@ -1040,16 +970,6 @@ export default function RecordsPage() {
                           ? loadAttachmentsFor(record.id).length
                           : 0
                       }
-                      editRecord={editRecord}
-                      editTitle={editTitle}
-                      editContent={editContent}
-                      editTag={editTag}
-                      editAttachments={editAttachments}
-                      showEditImagePicker={showEditImagePicker}
-                      showEditCameraModal={showEditCameraModal}
-                      editGalleryInputRef={editGalleryInputRef}
-                      editFileInputRef={editFileInputRef}
-                      editImagePickerAnchorRef={editImagePickerAnchorRef}
                       onView={handleViewRecord}
                       onEdit={(r) => {
                         setEditRecord(r);
@@ -1064,20 +984,6 @@ export default function RecordsPage() {
                       }}
                       onDelete={handleDelete}
                       onTogglePin={togglePin}
-                      onEditTitleChange={setEditTitle}
-                      onEditContentChange={setEditContent}
-                      onEditTagChange={setEditTag}
-                      onEditSave={handleEditSave}
-                      onEditCancel={() => setEditRecord(null)}
-                      onSetShowEditImagePicker={setShowEditImagePicker}
-                      onSetShowEditCameraModal={setShowEditCameraModal}
-                      onEditGalleryChange={handleEditGalleryChange}
-                      onEditFileChange={handleEditFileChange}
-                      onRemoveEditAttachment={(i) =>
-                        setEditAttachments((prev) =>
-                          prev.filter((_, pi) => pi !== i),
-                        )
-                      }
                       dataOcidIndex={idx + 1}
                     />
                   ))}
@@ -1114,16 +1020,6 @@ export default function RecordsPage() {
                           ? loadAttachmentsFor(record.id).length
                           : 0
                       }
-                      editRecord={editRecord}
-                      editTitle={editTitle}
-                      editContent={editContent}
-                      editTag={editTag}
-                      editAttachments={editAttachments}
-                      showEditImagePicker={showEditImagePicker}
-                      showEditCameraModal={showEditCameraModal}
-                      editGalleryInputRef={editGalleryInputRef}
-                      editFileInputRef={editFileInputRef}
-                      editImagePickerAnchorRef={editImagePickerAnchorRef}
                       onView={handleViewRecord}
                       onEdit={(r) => {
                         setEditRecord(r);
@@ -1138,20 +1034,6 @@ export default function RecordsPage() {
                       }}
                       onDelete={handleDelete}
                       onTogglePin={togglePin}
-                      onEditTitleChange={setEditTitle}
-                      onEditContentChange={setEditContent}
-                      onEditTagChange={setEditTag}
-                      onEditSave={handleEditSave}
-                      onEditCancel={() => setEditRecord(null)}
-                      onSetShowEditImagePicker={setShowEditImagePicker}
-                      onSetShowEditCameraModal={setShowEditCameraModal}
-                      onEditGalleryChange={handleEditGalleryChange}
-                      onEditFileChange={handleEditFileChange}
-                      onRemoveEditAttachment={(i) =>
-                        setEditAttachments((prev) =>
-                          prev.filter((_, pi) => pi !== i),
-                        )
-                      }
                       dataOcidIndex={idx + 1}
                     />
                   ))}
@@ -1287,18 +1169,236 @@ export default function RecordsPage() {
         </div>
       )}
 
-      {/* ── Camera modals ── */}
-      {showAddCameraModal && (
-        <CameraModal
-          onCapture={handleAddCameraCapture}
-          onClose={() => setShowAddCameraModal(false)}
-        />
-      )}
-      {showEditCameraModal && (
-        <CameraModal
-          onCapture={handleEditCameraCapture}
-          onClose={() => setShowEditCameraModal(false)}
-        />
+      {/* ── Edit Modal ── */}
+      {editRecord && (
+        // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop dismiss is supplementary
+        <div
+          className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40"
+          onClick={() => setEditRecord(null)}
+        >
+          {/* biome-ignore lint/a11y/useKeyWithClickEvents: stop-propagation wrapper */}
+          <div
+            className="w-full md:max-w-4xl mx-0 md:mx-4 bg-card rounded-t-2xl md:rounded-2xl border border-border shadow-2xl flex flex-col"
+            style={{ maxHeight: "95vh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border shrink-0 gap-2">
+              <h2 className="font-semibold text-foreground text-base">
+                Edit Record
+              </h2>
+              <button
+                type="button"
+                onClick={() => setEditRecord(null)}
+                className="p-1.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
+                aria-label="Close"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div className="overflow-y-auto px-5 py-4 flex-1 space-y-3">
+              <input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+                placeholder="Title"
+              />
+              {/* Tag selector */}
+              <div className="flex flex-wrap gap-1.5">
+                {RECORD_TAGS.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setEditTag(editTag === t ? "" : t)}
+                    className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors border ${
+                      editTag === t
+                        ? "border-accent bg-accent text-accent-foreground"
+                        : "border-border bg-muted/50 text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                rows={6}
+                className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                placeholder="Content..."
+              />
+              {/* Attachments — hidden inputs */}
+              <input
+                ref={editAttachCameraRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                multiple
+                className="hidden"
+                onChange={handleEditAttachCameraChange}
+              />
+              <input
+                ref={editAttachGalleryRef}
+                type="file"
+                accept="*/*"
+                multiple
+                className="hidden"
+                onChange={handleEditAttachGalleryChange}
+              />
+              <input
+                ref={editAttachFileRef}
+                type="file"
+                accept="*/*"
+                multiple
+                className="hidden"
+                onChange={handleEditAttachFileChange}
+              />
+
+              {/* Attachment list */}
+              {editAttachments.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+                    Attachments ({editAttachments.length})
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {editAttachments.map((att, idx) => {
+                      const isImg = att.mimeType.startsWith("image/");
+                      const isVid = att.mimeType.startsWith("video/");
+                      return (
+                        <div
+                          key={att.key}
+                          className="relative group rounded-lg overflow-hidden border border-border/50 bg-muted/20"
+                          style={{ maxWidth: isImg ? 120 : undefined }}
+                        >
+                          {isImg ? (
+                            <button
+                              type="button"
+                              onClick={() => openFilePreview(att)}
+                              className="block w-full"
+                              aria-label={`Preview ${att.name}`}
+                              title={att.name}
+                            >
+                              <img
+                                src={att.dataUrl}
+                                alt={att.name}
+                                className="w-full h-auto block"
+                                style={{ maxHeight: 100, objectFit: "contain" }}
+                              />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => openFilePreview(att)}
+                              className="flex items-center gap-2 px-2 py-1.5 text-xs text-foreground hover:bg-muted transition-colors w-full text-left"
+                              aria-label={`Preview or download ${att.name}`}
+                              title={att.name}
+                            >
+                              <span className="text-base leading-none shrink-0">
+                                {isVid
+                                  ? "🎬"
+                                  : att.mimeType === "application/pdf"
+                                    ? "📄"
+                                    : "📎"}
+                              </span>
+                              <span className="truncate max-w-[120px]">
+                                {att.name}
+                              </span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditAttachments((prev) =>
+                                prev.filter((_, i) => i !== idx),
+                              )
+                            }
+                            className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-destructive"
+                            aria-label={`Remove ${att.name}`}
+                          >
+                            <X className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Add Attachment inline picker */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEditAttachPicker((v) => !v)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                  aria-label="Add attachment"
+                  aria-expanded={showEditAttachPicker}
+                >
+                  <Paperclip size={13} />
+                  Add Attachment
+                </button>
+                {showEditAttachPicker && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEditAttachPicker(false);
+                        editAttachCameraRef.current?.click();
+                      }}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                      aria-label="Open camera"
+                    >
+                      <span>📷</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEditAttachPicker(false);
+                        editAttachGalleryRef.current?.click();
+                      }}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                      aria-label="Select from gallery"
+                    >
+                      <span>🖼</span> Gallery
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowEditAttachPicker(false);
+                        editAttachFileRef.current?.click();
+                      }}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                      aria-label="Upload files"
+                    >
+                      <span>📁</span> Files
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Modal footer */}
+            <div className="flex gap-2 px-5 py-4 border-t border-border shrink-0">
+              <button
+                type="button"
+                onClick={handleEditSave}
+                className="px-4 py-2 rounded-lg bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+                data-ocid="records.save_button"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditRecord(null)}
+                className="px-4 py-2 rounded-lg border border-border bg-background text-sm text-foreground hover:bg-muted transition-colors"
+                data-ocid="records.cancel_button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── File preview modal ── */}
@@ -1317,30 +1417,10 @@ interface RecordCardProps {
   tag?: string;
   isPinned: boolean;
   attachmentCount: number;
-  editRecord: DbRecord | null;
-  editTitle: string;
-  editContent: string;
-  editTag: string;
-  editAttachments: RecordStoredAttachment[];
-  showEditImagePicker: boolean;
-  showEditCameraModal: boolean;
-  editGalleryInputRef: React.RefObject<HTMLInputElement | null>;
-  editFileInputRef: React.RefObject<HTMLInputElement | null>;
-  editImagePickerAnchorRef: React.RefObject<HTMLDivElement | null>;
   onView: (r: DbRecord) => void;
   onEdit: (r: DbRecord) => void;
   onDelete: (id: number) => void;
   onTogglePin: (id: number) => void;
-  onEditTitleChange: (v: string) => void;
-  onEditContentChange: (v: string) => void;
-  onEditTagChange: (v: string) => void;
-  onEditSave: () => void;
-  onEditCancel: () => void;
-  onSetShowEditImagePicker: (v: boolean) => void;
-  onSetShowEditCameraModal: (v: boolean) => void;
-  onEditGalleryChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onEditFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onRemoveEditAttachment: (i: number) => void;
   dataOcidIndex: number;
 }
 
@@ -1349,154 +1429,13 @@ function RecordCard({
   tag,
   isPinned,
   attachmentCount,
-  editRecord,
-  editTitle,
-  editContent,
-  editTag,
-  editAttachments,
-  showEditImagePicker,
-  showEditCameraModal: _showEditCameraModal,
-  editGalleryInputRef,
-  editFileInputRef,
-  editImagePickerAnchorRef,
   onView,
   onEdit,
   onDelete,
   onTogglePin,
-  onEditTitleChange,
-  onEditContentChange,
-  onEditTagChange,
-  onEditSave,
-  onEditCancel,
-  onSetShowEditImagePicker,
-  onSetShowEditCameraModal,
-  onEditGalleryChange,
-  onEditFileChange,
-  onRemoveEditAttachment,
   dataOcidIndex,
 }: RecordCardProps) {
-  const isEditing = editRecord?.id === record.id;
   const tagColors = tag ? TAG_COLORS[tag as RecordTag] : null;
-
-  if (isEditing) {
-    return (
-      <div
-        className="p-4 rounded-xl border border-border bg-card shadow-sm border-l-4 border-l-accent"
-        data-ocid={`records.item.${dataOcidIndex}`}
-      >
-        <input
-          value={editTitle}
-          onChange={(e) => onEditTitleChange(e.target.value)}
-          className="w-full mb-2 px-3 py-1.5 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-          placeholder="Title"
-        />
-        {/* Tag selector */}
-        <div className="flex flex-wrap gap-1.5 mb-2">
-          {RECORD_TAGS.map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => onEditTagChange(editTag === t ? "" : t)}
-              className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors border ${
-                editTag === t
-                  ? "border-accent bg-accent text-accent-foreground"
-                  : "border-border bg-muted/50 text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div>
-        <textarea
-          value={editContent}
-          onChange={(e) => onEditContentChange(e.target.value)}
-          rows={3}
-          className="w-full px-3 py-1.5 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent resize-none"
-        />
-        {/* Attachments in edit */}
-        <div className="flex flex-wrap items-center gap-2 mt-2">
-          <div className="relative" ref={editImagePickerAnchorRef}>
-            <button
-              type="button"
-              onClick={() => onSetShowEditImagePicker(!showEditImagePicker)}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg border border-border bg-background text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Camera size={13} /> Add Image
-            </button>
-            <input
-              ref={editGalleryInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={onEditGalleryChange}
-            />
-            <ImageUploadPicker
-              isOpen={showEditImagePicker}
-              onClose={() => onSetShowEditImagePicker(false)}
-              onCameraClick={() => onSetShowEditCameraModal(true)}
-              onGalleryClick={() => editGalleryInputRef.current?.click()}
-              onFileClick={() => editGalleryInputRef.current?.click()}
-            />
-          </div>
-          <input
-            ref={editFileInputRef}
-            type="file"
-            accept="*/*"
-            multiple
-            className="hidden"
-            onChange={onEditFileChange}
-          />
-          <button
-            type="button"
-            onClick={() => editFileInputRef.current?.click()}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg border border-border bg-background text-xs text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Paperclip size={13} /> Attach Files
-          </button>
-          {editAttachments.map((att, idx) => (
-            <div key={att.key} className="relative">
-              {att.mimeType.startsWith("image/") ? (
-                <img
-                  src={att.dataUrl}
-                  alt={att.name}
-                  className="h-10 w-10 object-cover rounded-lg border border-border"
-                />
-              ) : (
-                <div className="h-10 w-10 rounded-lg border border-border bg-muted flex items-center justify-center">
-                  <Paperclip size={14} className="text-muted-foreground" />
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => onRemoveEditAttachment(idx)}
-                className="absolute -top-1 -right-1 bg-background border border-border rounded-full p-0.5 text-muted-foreground hover:text-foreground"
-              >
-                <X size={10} />
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="flex gap-2 mt-3">
-          <button
-            type="button"
-            onClick={onEditSave}
-            className="px-3 py-1 rounded-lg bg-accent text-accent-foreground text-xs font-medium hover:opacity-90 transition-opacity"
-            data-ocid="records.save_button"
-          >
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={onEditCancel}
-            className="px-3 py-1 rounded-lg border border-border bg-background text-xs text-foreground hover:bg-muted transition-colors"
-            data-ocid="records.cancel_button"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div

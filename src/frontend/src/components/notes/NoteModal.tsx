@@ -930,7 +930,7 @@ export function NoteModal({
                         <button
                           type="button"
                           onClick={() => handleRemoveAttachment(af.key)}
-                          className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-destructive"
+                          className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-destructive"
                           aria-label={`Remove attachment ${af.name}`}
                         >
                           <X className="w-2.5 h-2.5" />
