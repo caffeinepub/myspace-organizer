@@ -69,9 +69,14 @@ function EntryCard({
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/50 transition-colors"
       >
-        <span className="text-lg">{TYPE_ICONS[entry.type]}</span>
+        <span className="text-lg shrink-0">{TYPE_ICONS[entry.type]}</span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{entry.title}</p>
+          <p
+            className="text-sm font-medium break-words"
+            style={{ wordBreak: "break-word" }}
+          >
+            {entry.title}
+          </p>
           <p className="text-xs text-muted-foreground">
             {TYPE_LABELS[entry.type]} · {formatDate(entry.createdAt)}
           </p>
@@ -109,26 +114,39 @@ function EntryCard({
           {entry.username && (
             <div>
               <p className="text-[11px] text-muted-foreground">Username</p>
-              <p className="text-sm">{entry.username}</p>
+              <p
+                className="text-sm break-all"
+                style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
+              >
+                {entry.username}
+              </p>
             </div>
           )}
           {entry.email && (
             <div>
               <p className="text-[11px] text-muted-foreground">Email</p>
-              <p className="text-sm">{entry.email}</p>
+              <p
+                className="text-sm break-all"
+                style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
+              >
+                {entry.email}
+              </p>
             </div>
           )}
           {entry.password && (
             <div>
               <p className="text-[11px] text-muted-foreground">Password</p>
               <div className="flex items-center gap-2">
-                <p className="text-sm font-mono">
+                <p
+                  className="text-sm font-mono break-all"
+                  style={{ wordBreak: "break-all" }}
+                >
                   {showPwd ? entry.password : "••••••••"}
                 </p>
                 <button
                   type="button"
                   onClick={() => setShowPwd(!showPwd)}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground shrink-0"
                   aria-label="Toggle password"
                 >
                   {showPwd ? (
@@ -147,7 +165,8 @@ function EntryCard({
                 href={entry.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-primary truncate block hover:underline"
+                className="text-sm text-primary block hover:underline"
+                style={{ wordBreak: "break-all", overflowWrap: "break-word" }}
               >
                 {entry.url}
               </a>
@@ -156,7 +175,12 @@ function EntryCard({
           {entry.content && (
             <div>
               <p className="text-[11px] text-muted-foreground">Note</p>
-              <p className="text-sm whitespace-pre-wrap">{entry.content}</p>
+              <p
+                className="text-sm whitespace-pre-wrap"
+                style={{ wordBreak: "break-word", overflowWrap: "break-word" }}
+              >
+                {entry.content}
+              </p>
             </div>
           )}
           {entry.attachments && entry.attachments.length > 0 && (
@@ -180,7 +204,8 @@ function EntryCard({
                       download={att.name}
                       className="flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs hover:bg-muted/80"
                     >
-                      <File className="w-3 h-3" /> {att.name}
+                      <File className="w-3 h-3 shrink-0" />{" "}
+                      <span className="break-all">{att.name}</span>
                     </a>
                   ),
                 )}
@@ -250,7 +275,7 @@ export function LockerMain({ onLock }: Props) {
 
   if (showForm) {
     return (
-      <div className="flex items-center justify-center w-full min-h-[400px]">
+      <div className="flex items-start justify-center w-full">
         <LockerEntryForm
           entry={editingEntry}
           onSave={handleSave}
@@ -265,13 +290,16 @@ export function LockerMain({ onLock }: Props) {
 
   return (
     <div
-      className="bg-card rounded-2xl border border-border/50 w-full max-w-lg mx-4 flex flex-col"
-      style={{ maxHeight: "90vh" }}
+      className="bg-card rounded-xl sm:rounded-2xl border border-border/50 w-full max-w-lg flex flex-col overflow-hidden"
+      style={{
+        maxHeight: "calc(100dvh - 2rem)",
+        fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+      }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border/50 shrink-0">
+      {/* Header — sticky so it never scrolls away */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 shrink-0 sticky top-0 z-10 bg-card">
         <h2 className="font-semibold text-base flex items-center gap-2">
-          <Lock className="w-4 h-4 text-primary" /> My Locker
+          <Lock className="w-4 h-4 text-primary shrink-0" /> My Locker
         </h2>
         <div className="flex items-center gap-2">
           <select
@@ -299,8 +327,11 @@ export function LockerMain({ onLock }: Props) {
         </div>
       </div>
 
-      {/* Entries list */}
-      <div className="overflow-y-auto flex-1 p-4 space-y-2">
+      {/* Entries list — scrollable area */}
+      <div
+        className="overflow-y-auto flex-1 p-3 sm:p-4 space-y-2"
+        style={{ overscrollBehavior: "contain" }}
+      >
         <button
           type="button"
           onClick={() => {

@@ -76,11 +76,14 @@ export function LockerEntryForm({ entry, onSave, onClose }: Props) {
 
   return (
     <div
-      className="bg-card rounded-2xl border border-border/50 w-full max-w-lg mx-4 flex flex-col"
-      style={{ maxHeight: "90vh" }}
+      className="bg-card rounded-xl sm:rounded-2xl border border-border/50 w-full max-w-lg flex flex-col overflow-hidden"
+      style={{
+        maxHeight: "calc(100dvh - 2rem)",
+        fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+      }}
     >
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border/50 shrink-0">
+      {/* Header — sticky so it never scrolls away */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 shrink-0 sticky top-0 z-10 bg-card">
         <h2 className="font-semibold text-sm">
           {entry ? "Edit Entry" : "Add Entry"}
         </h2>
@@ -95,7 +98,10 @@ export function LockerEntryForm({ entry, onSave, onClose }: Props) {
       </div>
 
       {/* Scrollable body */}
-      <div className="overflow-y-auto p-4 space-y-4 flex-1">
+      <div
+        className="overflow-y-auto p-3 sm:p-4 space-y-4 flex-1"
+        style={{ overscrollBehavior: "contain" }}
+      >
         {/* Type selector */}
         <div>
           <p className="text-xs font-medium mb-2">Type</p>
@@ -137,6 +143,7 @@ export function LockerEntryForm({ entry, onSave, onClose }: Props) {
             placeholder="Entry name"
             data-ocid="locker.entry.input"
             className="w-full bg-muted/50 rounded-lg p-2.5 text-sm border border-border/50 outline-none focus:border-primary transition-colors"
+            style={{ fontSize: "15px", lineHeight: "1.5" }}
           />
         </div>
 
@@ -157,6 +164,7 @@ export function LockerEntryForm({ entry, onSave, onClose }: Props) {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Username or email"
                 className="w-full bg-muted/50 rounded-lg p-2.5 text-sm border border-border/50 outline-none focus:border-primary transition-colors"
+                style={{ fontSize: "15px", lineHeight: "1.5" }}
               />
             </div>
             <div>
@@ -174,6 +182,7 @@ export function LockerEntryForm({ entry, onSave, onClose }: Props) {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password"
                   className="w-full bg-muted/50 rounded-lg p-2.5 pr-10 text-sm border border-border/50 outline-none focus:border-primary transition-colors"
+                  style={{ fontSize: "15px", lineHeight: "1.5" }}
                 />
                 <button
                   type="button"
@@ -203,6 +212,7 @@ export function LockerEntryForm({ entry, onSave, onClose }: Props) {
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://"
                 className="w-full bg-muted/50 rounded-lg p-2.5 text-sm border border-border/50 outline-none focus:border-primary transition-colors"
+                style={{ fontSize: "15px", lineHeight: "1.5" }}
               />
             </div>
           </>
@@ -225,6 +235,7 @@ export function LockerEntryForm({ entry, onSave, onClose }: Props) {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 className="w-full bg-muted/50 rounded-lg p-2.5 text-sm border border-border/50 outline-none focus:border-primary transition-colors"
+                style={{ fontSize: "15px", lineHeight: "1.5" }}
               />
             </div>
             <div>
@@ -242,6 +253,7 @@ export function LockerEntryForm({ entry, onSave, onClose }: Props) {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Password"
                   className="w-full bg-muted/50 rounded-lg p-2.5 pr-10 text-sm border border-border/50 outline-none focus:border-primary transition-colors"
+                  style={{ fontSize: "15px", lineHeight: "1.5" }}
                 />
                 <button
                   type="button"
@@ -276,6 +288,11 @@ export function LockerEntryForm({ entry, onSave, onClose }: Props) {
               placeholder="Your secure note..."
               rows={5}
               className="w-full bg-muted/50 rounded-lg p-2.5 text-sm border border-border/50 outline-none focus:border-primary transition-colors resize-none"
+              style={{
+                fontSize: "15px",
+                lineHeight: "1.6",
+                letterSpacing: "0.01em",
+              }}
             />
           </div>
         )}
@@ -388,7 +405,7 @@ export function LockerEntryForm({ entry, onSave, onClose }: Props) {
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-border/50 flex gap-2 shrink-0">
+      <div className="px-4 py-3 border-t border-border/50 flex gap-2 shrink-0">
         <button
           type="button"
           onClick={onClose}

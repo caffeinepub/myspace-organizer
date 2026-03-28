@@ -50,7 +50,7 @@ export function LockerModal({ onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto"
       data-ocid="locker.modal"
     >
       {/* Backdrop */}
@@ -64,7 +64,7 @@ export function LockerModal({ onClose }: Props) {
       />
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: child content handles keyboard events */}
       <div
-        className="relative z-10 w-full flex items-center justify-center"
+        className="relative z-10 w-full flex items-start sm:items-center justify-center py-4 px-2 sm:px-4 sm:py-4 min-h-full sm:min-h-0"
         onClick={handleInteraction}
       >
         {state === "setup" && (
