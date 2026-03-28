@@ -20,6 +20,7 @@ import {
   Paperclip,
   Pencil,
   Plus,
+  Share2,
   Trash2,
   Upload,
   X,
@@ -530,6 +531,27 @@ export default function RoutinesPage() {
   };
   const handleDragEnd = () => setDragIndex(null);
 
+  const handleShare = async () => {
+    const items = allProfiles.flatMap((p) => p.items || []);
+    if (!items.length) {
+      showErrorToast("No routines to share");
+      return;
+    }
+    const text = allProfiles
+      .map(
+        (p) =>
+          `${p.profileType}\n${(p.items || []).map((r) => `- ${r.time} ${r.title}`).join("\n")}`,
+      )
+      .join("\n\n---\n\n");
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "My Routines", text });
+      } catch {}
+    } else {
+      await navigator.clipboard.writeText(text);
+      showSuccessToast("Copied to clipboard");
+    }
+  };
   const handleImportClick = () => {
     importInputRef.current?.click();
   };
@@ -760,6 +782,10 @@ export default function RoutinesPage() {
                 disabled={!profile}
               >
                 Export as JSON
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleShare}>
+                <Share2 className="w-4 h-4 mr-2" /> Share
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -19,6 +19,7 @@ import {
   Pin,
   Plus,
   Search,
+  Share2,
   Star,
   Tag,
   Trash2,
@@ -509,6 +510,24 @@ export default function RecordsPage() {
   };
 
   // ── import ────────────────────────────────────────────────────────────────────
+
+  const handleShare = async () => {
+    if (!exportList.length) {
+      showErrorToast("No records to share");
+      return;
+    }
+    const text = exportList
+      .map((r) => `${r.title || "Untitled"}\n${r.content || ""}`)
+      .join("\n\n---\n\n");
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "My Records", text });
+      } catch {}
+    } else {
+      await navigator.clipboard.writeText(text);
+      showSuccessToast("Copied to clipboard");
+    }
+  };
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -598,6 +617,10 @@ export default function RecordsPage() {
               <DropdownMenuItem onClick={handleExportJson}>
                 <FileJson className="w-4 h-4 mr-2" /> Export as JSON
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleShare}>
+                <Share2 className="w-4 h-4 mr-2" /> Share
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <button
@@ -636,18 +659,26 @@ export default function RecordsPage() {
             </button>
           )}
         </div>
-        <input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          className="px-2 py-1.5 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-        />
-        <input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          className="px-2 py-1.5 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
-        />
+        <label className="flex flex-col items-start">
+          <span className="text-xs text-muted-foreground px-1 mb-0.5">
+            From
+          </span>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="px-2 py-1.5 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+        </label>
+        <label className="flex flex-col items-start">
+          <span className="text-xs text-muted-foreground px-1 mb-0.5">To</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="px-2 py-1.5 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+        </label>
         {(dateFrom || dateTo) && (
           <button
             type="button"

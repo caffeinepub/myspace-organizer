@@ -14,6 +14,7 @@ import {
   FileType,
   Plus,
   Search,
+  Share2,
   Tag,
   Trash2,
   Upload,
@@ -158,6 +159,24 @@ export function NotesPage({
   );
 
   // ---- Import ----
+
+  const handleShare = useCallback(async () => {
+    if (!allNotes.length) {
+      showErrorToast("No notes to share");
+      return;
+    }
+    const text = allNotes
+      .map((n) => `${n.title || "Untitled"}\n${n.content || ""}`)
+      .join("\n\n---\n\n");
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "My Notes", text });
+      } catch {}
+    } else {
+      await navigator.clipboard.writeText(text);
+      showSuccessToast("Copied to clipboard");
+    }
+  }, [allNotes]);
   const handleImportClick = useCallback(() => {
     importInputRef.current?.click();
   }, []);
@@ -260,6 +279,10 @@ export function NotesPage({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleExportAll("json")}>
                   <FileJson className="w-4 h-4 mr-2" /> Export as JSON
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleShare}>
+                  <Share2 className="w-4 h-4 mr-2" /> Share
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
