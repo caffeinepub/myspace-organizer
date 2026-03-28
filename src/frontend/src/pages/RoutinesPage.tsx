@@ -721,7 +721,7 @@ export default function RoutinesPage() {
             aria-label="Import routines"
             title="Import Routines"
           >
-            <Upload className="w-3.5 h-3.5" />
+            <FileDown className="w-3.5 h-3.5" />
             <span>Import</span>
           </button>
 
@@ -734,7 +734,7 @@ export default function RoutinesPage() {
                 aria-label="Export routines"
                 title="Export Routines"
               >
-                <FileDown className="w-3.5 h-3.5" />
+                <Upload className="w-3.5 h-3.5" />
                 <span>Export</span>
               </button>
             </DropdownMenuTrigger>

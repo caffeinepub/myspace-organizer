@@ -1,18 +1,20 @@
 import { format } from "date-fns";
 import {
   Archive,
+  CheckSquare,
   FileDown,
   Mic,
   MicOff,
   Minus,
   Paperclip,
+  Pencil,
   Pin,
   Plus,
   Trash2,
   X,
 } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Note, NoteChecklistItem } from "../../db/schema";
 import { useImageStorage } from "../../hooks/useImageStorage";
 import { useLabels } from "../../hooks/useLabels";
@@ -24,6 +26,7 @@ import { FilePreviewModal } from "../common/FilePreviewModal";
 import type { AttachedFile } from "../common/FilePreviewModal";
 import { ImageUploadPicker } from "../common/ImageUploadPicker";
 import { Modal } from "../common/Modal";
+import { SketchCanvas } from "./SketchCanvas";
 
 // ── Note-attachment storage helpers (localStorage, separate from imageRefs) ──────
 const NOTE_ATTACHMENTS_KEY = "noteAttachmentsById";
@@ -90,6 +93,13 @@ const NOTE_COLORS = [
   { label: "Gray", value: "#f5f5f5" },
 ];
 
+/** Parse #hashtag tokens from text content */
+function extractHashtags(text: string): string[] {
+  const matches = text.match(/#[\w]+/g);
+  if (!matches) return [];
+  return Array.from(new Set(matches));
+}
+
 interface NoteModalProps {
   note: Note | null;
   isOpen: boolean;
@@ -123,6 +133,13 @@ export function NoteModal({
   const [newCheckItem, setNewCheckItem] = useState("");
   const [showImagePicker, setShowImagePicker] = useState(false);
   const [imgNaturalAspect, setImgNaturalAspect] = useState<number | null>(null);
+
+  // ── Sketch canvas state (additive) ───────────────────────────────────────────
+  const [showSketchCanvas, setShowSketchCanvas] = useState(false);
+  const [sketchBgUrl, setSketchBgUrl] = useState<string | null>(null);
+
+  // ── Inline checklist toggle for text notes (additive) ────────────────────────
+  const [showInlineChecklist, setShowInlineChecklist] = useState(false);
 
   // ── Multi-file attachment state (additive — does not touch imageRefs or save logic) ──
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -165,6 +182,9 @@ export function NoteModal({
   // Track the last transcript length we've already appended, to avoid double-appending
   const lastTranscriptRef = useRef("");
 
+  // ── Derived hashtags from content ────────────────────────────────────────────
+  const hashtags = useMemo(() => extractHashtags(content), [content]);
+
   useEffect(() => {
     if (note) {
       setTitle(note.title);
@@ -178,6 +198,7 @@ export function NoteModal({
           : "",
       );
       setImgNaturalAspect(null);
+      setShowInlineChecklist(note.checklistItems.length > 0);
       // Load image if image note
       if (note.type === "image" && note.imageRefs.length > 0) {
         getImageUrl(note.imageRefs[0], "full").then((url) => setImageUrl(url));
@@ -208,6 +229,8 @@ export function NoteModal({
       setShowAttachPicker(false);
       setShowFilePreview(false);
       setPreviewFile(null);
+      setShowSketchCanvas(false);
+      setSketchBgUrl(null);
     }
   }, [isOpen, isListening, stopListening, resetTranscript]);
 
@@ -241,6 +264,40 @@ export function NoteModal({
       startListening();
     }
   }, [isListening, startListening, stopListening, resetTranscript]);
+
+  // ── Sketch save handler ───────────────────────────────────────────────────────
+  const handleSketchSave = useCallback(
+    (dataUrl: string) => {
+      if (!note) return;
+      // Save sketch as an attachment
+      const key = `note-sketch-${note.id || Date.now()}-${Date.now()}`;
+      const name = `sketch-${Date.now()}.png`;
+      const stored: StoredAttachment = {
+        key,
+        name,
+        mimeType: "image/png",
+        dataUrl,
+        size: dataUrl.length,
+      };
+      setAttachedFiles((prev) => {
+        const display: AttachedFile = {
+          key,
+          name,
+          mimeType: "image/png",
+          url: dataUrl,
+          size: dataUrl.length,
+        };
+        const merged = [...prev, display];
+        const storageKey = getNoteStorageKey(note);
+        const allStored = loadNoteAttachments(storageKey);
+        saveNoteAttachments(storageKey, [...allStored, stored]);
+        return merged;
+      });
+      setShowSketchCanvas(false);
+      setSketchBgUrl(null);
+    },
+    [note],
+  );
 
   // ── Multi-file attachment handlers (additive) ────────────────────────────────
   const handleAttachFiles = useCallback(
@@ -452,8 +509,82 @@ export function NoteModal({
   const bgStyle: React.CSSProperties =
     color !== "default" ? { backgroundColor: color } : {};
 
+  // ── Shared checklist editor (used for both checklist-type notes and inline in text notes) ──
+  const ChecklistEditor = (
+    <div className="space-y-2">
+      {checklistItems.map((item) => (
+        <div key={item.id} className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => toggleCheckItem(item.id)}
+            className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center transition-colors
+            ${item.checked ? "bg-primary border-primary" : "border-muted-foreground"}`}
+            aria-label={`${item.checked ? "Uncheck" : "Check"} item: ${item.text}`}
+          >
+            {item.checked && (
+              <span className="text-primary-foreground text-[8px]">✓</span>
+            )}
+          </button>
+          <input
+            value={item.text}
+            onChange={(e) =>
+              setChecklistItems((prev) =>
+                prev.map((i) =>
+                  i.id === item.id ? { ...i, text: e.target.value } : i,
+                ),
+              )
+            }
+            className={`flex-1 bg-transparent text-sm outline-none ${
+              item.checked ? "line-through text-muted-foreground" : ""
+            }`}
+            aria-label={`Checklist item: ${item.text}`}
+          />
+          <button
+            type="button"
+            onClick={() => removeCheckItem(item.id)}
+            className="text-muted-foreground hover:text-destructive transition-colors"
+            aria-label={`Remove item: ${item.text}`}
+          >
+            <Minus className="w-3 h-3" />
+          </button>
+        </div>
+      ))}
+      <div className="flex items-center gap-2">
+        <Plus className="w-4 h-4 text-muted-foreground shrink-0" />
+        <input
+          value={newCheckItem}
+          onChange={(e) => setNewCheckItem(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addCheckItem()}
+          placeholder="List item"
+          className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+          aria-label="Add new checklist item"
+        />
+        {newCheckItem && (
+          <button
+            type="button"
+            onClick={addCheckItem}
+            className="text-primary text-xs"
+          >
+            Add
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <>
+      {/* Sketch Canvas — fullscreen overlay, rendered outside the Modal */}
+      <SketchCanvas
+        isOpen={showSketchCanvas}
+        onClose={() => {
+          setShowSketchCanvas(false);
+          setSketchBgUrl(null);
+        }}
+        onSave={handleSketchSave}
+        backgroundImageUrl={sketchBgUrl}
+      />
+
       <Modal isOpen={isOpen} onClose={handleSave} size="2xl" showClose={false}>
         {/* Outer wrapper fills the modal padding area and applies note color */}
         <div style={bgStyle} className="bg-card rounded-xl -m-4">
@@ -469,7 +600,9 @@ export function NoteModal({
                 onClick={() => {
                   if (note.id) onPin(note.id);
                 }}
-                className={`p-1.5 rounded-lg hover:bg-black/10 transition-colors ${note.pinned ? "text-primary" : "text-muted-foreground"}`}
+                className={`p-1.5 rounded-lg hover:bg-black/10 transition-colors ${
+                  note.pinned ? "text-primary" : "text-muted-foreground"
+                }`}
                 aria-label={note.pinned ? "Unpin note" : "Pin note"}
               >
                 <Pin className="w-4 h-4" />
@@ -591,7 +724,9 @@ export function NoteModal({
                         ? "bg-primary text-primary-foreground border-primary"
                         : "border-border hover:bg-muted"
                     }`}
-                    aria-label={`${selectedLabels.includes(label.name) ? "Remove" : "Add"} label ${label.name}`}
+                    aria-label={`${
+                      selectedLabels.includes(label.name) ? "Remove" : "Add"
+                    } label ${label.name}`}
                   >
                     {label.name}
                   </button>
@@ -608,6 +743,26 @@ export function NoteModal({
                     className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 font-medium"
                   >
                     🏷️ {lbl}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* ── Hashtag chips — derived from content (additive) ────────────── */}
+            {hashtags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {hashtags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full font-medium"
+                    style={{
+                      background: "rgba(59,130,246,0.12)",
+                      color: "#2563eb",
+                      border: "1px solid rgba(59,130,246,0.3)",
+                    }}
+                    aria-label={`Hashtag ${tag}`}
+                  >
+                    {tag}
                   </span>
                 ))}
               </div>
@@ -648,7 +803,7 @@ export function NoteModal({
                     }
                   }}
                   onFocus={() => setActiveField("content")}
-                  placeholder="Take a note..."
+                  placeholder="Take a note... (use #hashtag to tag)"
                   className="w-full bg-transparent text-base placeholder:text-muted-foreground/60 outline-none resize-none min-h-[260px] pr-8"
                   aria-label="Note content"
                 />
@@ -701,68 +856,52 @@ export function NoteModal({
               </>
             )}
 
-            {note.type === "checklist" && (
-              <div className="space-y-2">
-                {checklistItems.map((item) => (
-                  <div key={item.id} className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => toggleCheckItem(item.id)}
-                      className={`w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center transition-colors
-                      ${item.checked ? "bg-primary border-primary" : "border-muted-foreground"}`}
-                      aria-label={`${item.checked ? "Uncheck" : "Check"} item: ${item.text}`}
-                    >
-                      {item.checked && (
-                        <span className="text-primary-foreground text-[8px]">
-                          ✓
-                        </span>
-                      )}
-                    </button>
-                    <input
-                      value={item.text}
-                      onChange={(e) =>
-                        setChecklistItems((prev) =>
-                          prev.map((i) =>
-                            i.id === item.id
-                              ? { ...i, text: e.target.value }
-                              : i,
-                          ),
-                        )
-                      }
-                      className={`flex-1 bg-transparent text-sm outline-none ${item.checked ? "line-through text-muted-foreground" : ""}`}
-                      aria-label={`Checklist item: ${item.text}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeCheckItem(item.id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
-                      aria-label={`Remove item: ${item.text}`}
-                    >
-                      <Minus className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-                <div className="flex items-center gap-2">
-                  <Plus className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <input
-                    value={newCheckItem}
-                    onChange={(e) => setNewCheckItem(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && addCheckItem()}
-                    placeholder="List item"
-                    className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
-                    aria-label="Add new checklist item"
-                  />
-                  {newCheckItem && (
-                    <button
-                      type="button"
-                      onClick={addCheckItem}
-                      className="text-primary text-xs"
-                    >
-                      Add
-                    </button>
+            {/* ── Inline checklist toggle for text notes (additive) ─────────── */}
+            {note.type === "text" && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowInlineChecklist((v) => !v)}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                    showInlineChecklist
+                      ? "bg-primary/15 text-primary border border-primary/30"
+                      : "bg-muted hover:bg-muted/80 text-muted-foreground"
+                  }`}
+                  aria-label="Toggle checklist"
+                  aria-expanded={showInlineChecklist}
+                >
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  Checklist
+                  {checklistItems.length > 0 && (
+                    <span className="ml-1 text-[10px] bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">
+                      {checklistItems.length}
+                    </span>
                   )}
-                </div>
+                </button>
+                {showInlineChecklist && (
+                  <div className="mt-2 pl-1">{ChecklistEditor}</div>
+                )}
               </div>
+            )}
+
+            {/* ── Draw (sketch) button for text notes ──────────────────────── */}
+            {note.type === "text" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSketchBgUrl(null);
+                  setShowSketchCanvas(true);
+                }}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground w-fit"
+                aria-label="Open sketch canvas"
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Draw / Sketch
+              </button>
+            )}
+
+            {note.type === "checklist" && (
+              <div className="space-y-2">{ChecklistEditor}</div>
             )}
 
             {note.type === "image" && (
@@ -808,6 +947,19 @@ export function NoteModal({
                           : undefined
                       }
                     />
+                    {/* Draw on image button (top-right overlay) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSketchBgUrl(imageUrl);
+                        setShowSketchCanvas(true);
+                      }}
+                      className="absolute top-2 right-2 flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg bg-black/60 text-white hover:bg-black/80 transition-colors"
+                      aria-label="Draw on this image"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                      Draw
+                    </button>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-32 bg-muted/30 rounded-xl border-2 border-dashed border-border/50">
@@ -817,34 +969,49 @@ export function NoteModal({
                   </div>
                 )}
 
-                {/* Upload picker trigger */}
-                <div ref={uploadTriggerRef} className="relative inline-block">
+                {/* Upload picker trigger + Draw button row */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div ref={uploadTriggerRef} className="relative inline-block">
+                    <button
+                      type="button"
+                      onClick={() => setShowImagePicker((v) => !v)}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                      aria-label="Change image"
+                    >
+                      {imageUrl ? "Change image" : "Add image"}
+                    </button>
+                    {showImagePicker && (
+                      <ImageUploadPicker
+                        isOpen={showImagePicker}
+                        onClose={() => setShowImagePicker(false)}
+                        onCameraClick={() => {
+                          setShowImagePicker(false);
+                          cameraInputRef.current?.click();
+                        }}
+                        onGalleryClick={() => {
+                          setShowImagePicker(false);
+                          galleryInputRef.current?.click();
+                        }}
+                        onFileClick={() => {
+                          setShowImagePicker(false);
+                          fileInputRef.current?.click();
+                        }}
+                      />
+                    )}
+                  </div>
+                  {/* Standalone sketch (no image bg) */}
                   <button
                     type="button"
-                    onClick={() => setShowImagePicker((v) => !v)}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
-                    aria-label="Change image"
+                    onClick={() => {
+                      setSketchBgUrl(null);
+                      setShowSketchCanvas(true);
+                    }}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
+                    aria-label="Open blank sketch canvas"
                   >
-                    {imageUrl ? "Change image" : "Add image"}
+                    <Pencil className="w-3.5 h-3.5" />
+                    Sketch
                   </button>
-                  {showImagePicker && (
-                    <ImageUploadPicker
-                      isOpen={showImagePicker}
-                      onClose={() => setShowImagePicker(false)}
-                      onCameraClick={() => {
-                        setShowImagePicker(false);
-                        cameraInputRef.current?.click();
-                      }}
-                      onGalleryClick={() => {
-                        setShowImagePicker(false);
-                        galleryInputRef.current?.click();
-                      }}
-                      onFileClick={() => {
-                        setShowImagePicker(false);
-                        fileInputRef.current?.click();
-                      }}
-                    />
-                  )}
                 </div>
 
                 {/* Optional caption */}
@@ -986,23 +1153,12 @@ export function NoteModal({
                     type="button"
                     onClick={() => {
                       setShowAttachPicker(false);
-                      attachGalleryRef.current?.click();
-                    }}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
-                    aria-label="Select from gallery"
-                  >
-                    <span>🖼</span> Gallery
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAttachPicker(false);
                       attachFileRef.current?.click();
                     }}
                     className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-muted-foreground"
-                    aria-label="Upload files"
+                    aria-label="Add files"
                   >
-                    <span>📁</span> Files
+                    <span>📁</span> Add Files
                   </button>
                 </>
               )}

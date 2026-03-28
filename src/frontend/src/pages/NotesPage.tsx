@@ -244,7 +244,7 @@ export function NotesPage({
               aria-label="Import notes"
               title="Import Notes"
             >
-              <Upload className="w-3.5 h-3.5" />
+              <FileDown className="w-3.5 h-3.5" />
               <span>Import</span>
             </button>
             <input
@@ -264,7 +264,7 @@ export function NotesPage({
                   aria-label="Export all notes"
                   title="Export All Notes"
                 >
-                  <FileDown className="w-3.5 h-3.5" />
+                  <Upload className="w-3.5 h-3.5" />
                   <span>Export</span>
                 </button>
               </DropdownMenuTrigger>

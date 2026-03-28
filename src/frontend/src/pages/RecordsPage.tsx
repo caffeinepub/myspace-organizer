@@ -589,7 +589,7 @@ export default function RecordsPage() {
             title="Import Records"
             data-ocid="records.upload_button"
           >
-            <Upload className="w-3.5 h-3.5" />
+            <FileDown className="w-3.5 h-3.5" />
             <span>Import</span>
           </button>
           <DropdownMenu>
@@ -601,7 +601,7 @@ export default function RecordsPage() {
                 title="Export All Records"
                 data-ocid="records.secondary_button"
               >
-                <FileDown className="w-3.5 h-3.5" />
+                <Upload className="w-3.5 h-3.5" />
                 <span>Export</span>
               </button>
             </DropdownMenuTrigger>
