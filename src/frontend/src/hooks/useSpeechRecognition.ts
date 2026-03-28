@@ -47,9 +47,12 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const [error, setError] = useState<string | null>(null);
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
-  // Tracks the highest result index already processed as final, to prevent
-  // mobile browsers from replaying old final results and causing duplication.
-  const processedUpToRef = useRef(0);
+
+  // Tracks the full accumulated final text seen so far in this session.
+  // By comparing total-final-text length against this ref (text-based, not
+  // index-based) we avoid every mobile quirk where resultIndex resets to 0
+  // or the browser replays the entire results array on each onresult event.
+  const committedFinalRef = useRef("");
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: SpeechRecognitionAPI is stable
   useEffect(() => {
@@ -61,26 +64,32 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     recognition.lang = "en-US";
 
     recognition.onresult = (event: any) => {
-      let finalText = "";
+      // Rebuild the COMPLETE final text and interim text from the full
+      // results array on every event.  This is deliberately not using
+      // event.resultIndex because on Android Chrome it is often 0 even
+      // after several results, causing the whole array to be "replayed".
+      let totalFinalText = "";
       let interimText = "";
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          // Only process each result index once — mobile browsers sometimes
-          // re-fire onresult with resultIndex=0 replaying all prior finals.
-          if (i >= processedUpToRef.current) {
-            finalText += result[0].transcript;
-            processedUpToRef.current = i + 1;
-          }
+          totalFinalText += result[0].transcript;
         } else {
           interimText += result[0].transcript;
         }
       }
 
-      if (finalText) {
-        setTranscript((prev) => prev + finalText);
+      // Only append the portion of final text that is genuinely new —
+      // i.e., beyond what we have already committed to the transcript state.
+      if (totalFinalText.length > committedFinalRef.current.length) {
+        const newPortion = totalFinalText.slice(
+          committedFinalRef.current.length,
+        );
+        committedFinalRef.current = totalFinalText;
+        setTranscript((prev) => prev + newPortion);
       }
+
       setInterimTranscript(interimText);
     };
 
@@ -107,8 +116,8 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
     setError(null);
     setTranscript("");
     setInterimTranscript("");
-    // Reset processed index so a fresh session starts from 0
-    processedUpToRef.current = 0;
+    // Reset the committed-text buffer so a fresh session starts clean
+    committedFinalRef.current = "";
     try {
       recognitionRef.current.start();
       setIsListening(true);
@@ -127,7 +136,7 @@ export function useSpeechRecognition(): UseSpeechRecognitionReturn {
   const resetTranscript = useCallback(() => {
     setTranscript("");
     setInterimTranscript("");
-    processedUpToRef.current = 0;
+    committedFinalRef.current = "";
   }, []);
 
   return {
