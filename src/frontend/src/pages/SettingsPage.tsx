@@ -1,9 +1,11 @@
 import { Button } from "@/components/ui/button";
 import {
   AlertTriangle,
+  ChevronRight,
   Download,
   HardDrive,
   Image,
+  Lock,
   Moon,
   Palette,
   Sun,
@@ -14,6 +16,7 @@ import {
 import type React from "react";
 import { useState } from "react";
 import { useEffect } from "react";
+import { LockerModal } from "../components/locker/LockerModal";
 import { db } from "../db/db";
 import { useAppStore } from "../store/appStore";
 import {
@@ -78,6 +81,7 @@ export function SettingsPage() {
   const [bgImageUrl, setBgImageUrl] = useState<string | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [showImportConfirm, setShowImportConfirm] = useState(false);
+  const [showLocker, setShowLocker] = useState(false);
 
   useEffect(() => {
     // Load storage info
@@ -275,6 +279,29 @@ export function SettingsPage() {
   return (
     <div className="p-4 max-w-lg mx-auto pb-8">
       <h1 className="text-xl font-bold mb-6">Settings</h1>
+
+      {/* Locker */}
+      <section className="bg-card rounded-xl border border-border/50 p-4 mb-4">
+        <h2 className="font-semibold text-sm mb-3 flex items-center gap-2">
+          <Lock className="w-4 h-4 text-primary" /> Locker
+        </h2>
+        <p className="text-xs text-muted-foreground mb-3">
+          Securely store passwords, credentials, and private files protected by
+          PIN.
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowLocker(true)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-muted/50 rounded-lg border border-border/50 hover:bg-muted transition-colors text-sm font-medium"
+          aria-label="Open locker"
+          data-ocid="locker.open_modal_button"
+        >
+          <span className="flex items-center gap-2">
+            <Lock className="w-4 h-4" /> Open Locker
+          </span>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </section>
 
       {/* Theme */}
       <section className="bg-card rounded-xl border border-border/50 p-4 mb-4">
@@ -587,6 +614,8 @@ export function SettingsPage() {
           </div>
         )}
       </section>
+
+      {showLocker && <LockerModal onClose={() => setShowLocker(false)} />}
     </div>
   );
 }
