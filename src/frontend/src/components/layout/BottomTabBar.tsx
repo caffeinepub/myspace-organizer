@@ -1,5 +1,17 @@
-import { BookOpen, Calendar, Home, Settings, StickyNote } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  Cloud,
+  CloudOff,
+  Fingerprint,
+  Home,
+  RefreshCw,
+  Settings,
+  StickyNote,
+} from "lucide-react";
 import React from "react";
+import { useInternetIdentity } from "../../hooks/useInternetIdentity";
+import { useSyncService } from "../../hooks/useSyncService";
 
 const TABS = [
   { id: "home", label: "Home", icon: Home },
@@ -15,6 +27,10 @@ interface BottomTabBarProps {
 }
 
 export function BottomTabBar({ activeTab, onTabChange }: BottomTabBarProps) {
+  const { identity, login } = useInternetIdentity();
+  const { isSyncing } = useSyncService();
+  const isLoggedIn = !!identity && !identity.getPrincipal().isAnonymous();
+
   return (
     <nav
       className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-md border-t border-border/50"
@@ -55,6 +71,28 @@ export function BottomTabBar({ activeTab, onTabChange }: BottomTabBarProps) {
             </button>
           );
         })}
+
+        {/* Sync / login indicator */}
+        <button
+          type="button"
+          onClick={isLoggedIn ? undefined : login}
+          data-ocid="auth.toggle"
+          title={isLoggedIn ? "Synced to cloud" : "Sign in to sync"}
+          className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-150 text-muted-foreground hover:text-foreground"
+        >
+          <div className="relative">
+            {isSyncing ? (
+              <RefreshCw className="w-4 h-4 animate-spin text-primary" />
+            ) : isLoggedIn ? (
+              <Cloud className="w-4 h-4 text-primary" />
+            ) : (
+              <CloudOff className="w-4 h-4" />
+            )}
+          </div>
+          <span className="text-[10px] font-medium">
+            {isLoggedIn ? "Synced" : "Sign in"}
+          </span>
+        </button>
       </div>
     </nav>
   );

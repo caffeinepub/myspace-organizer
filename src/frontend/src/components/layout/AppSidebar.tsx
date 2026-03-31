@@ -7,6 +7,7 @@ import {
   StickyNote,
 } from "lucide-react";
 import React from "react";
+import { LoginButton } from "../auth/LoginButton";
 
 const TABS = [
   { id: "home", label: "Home", icon: Home },
@@ -75,7 +76,10 @@ export function AppSidebar({ activeTab, onTabChange }: AppSidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-sidebar-border space-y-3">
+        {/* Login / sync widget */}
+        <LoginButton />
+
         <p className="text-[10px] text-muted-foreground text-center">
           Built with ❤️ using{" "}
           <a

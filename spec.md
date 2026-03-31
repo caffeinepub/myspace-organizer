@@ -1,37 +1,36 @@
 # MySpace Organizer
 
 ## Current State
-RecordsPage is a basic list with inline edit, a small bottom-sheet view modal (sm:max-w-lg), no tags, no categories, no multi-file attachments, no timeline layout. Routines and Notes have a larger detail modal (max-w-4xl, 95vh), rich card UI, and full file attachment support.
+- Internet Identity (ICP) login is already implemented with full cross-device sync
+- All modules sync to backend via `storeUserData`/`getUserData` using the ICP principal as the key
+- `LoginButton` component shows only Internet Identity option
+- Migration modal prompts on first login to upload local data
 
 ## Requested Changes (Diff)
 
 ### Add
-- Timeline-style vertical layout for the records list (date separators grouping records by day)
-- Mood/type tag picker per record: options like Personal, Work, Health, Travel, Idea, Memory (colored badges)
-- Pinned records section at top (star/pin button on each card)
-- Large detail modal matching Routines/Notes perspective (max-w-4xl, 90vh, scrollable body)
-- Multi-file attachment support in add/edit forms: Camera, Gallery, Files — using same 3-option picker pattern as Notes/Routines
-- File preview in detail modal: images at natural ratio with fullscreen click, PDFs inline, videos with controls, others downloadable
-- "Add New Record" button in header (same as Notes)
-- Colored left-border accent on cards based on category/mood tag
-- Word count indicator in add form
-- In detail modal: show full content, date/time, tag badge, attached images/files
+- Username/password registration flow (shown alongside Internet Identity on login UI)
+- Password hashing via SubtleCrypto SHA-256 in the browser
+- Recovery code generation at registration (24-character alphanumeric, shown once)
+- "Forgot password?" flow using recovery code to reset password
+- `useUsernameAuth` hook managing username/password session state in localStorage (always remembered)
+- Backend functions: `registerUser`, `loginUser`, `resetPasswordWithRecovery` storing hashed credentials per username
+- Backend per-user-key sync functions: `storeUserDataByKey`, `getUserDataByKey` for username/password users
+- Updated `LoginButton` to show both auth options (Internet Identity + Username/Password)
+- `UsernameAuthModal` component for login, register, and forgot-password flows
 
 ### Modify
-- View modal: upgrade from small bottom-sheet to large centered modal matching Notes/Routines (max-w-4xl, up to 90vh)
-- Record cards: show tag badge and attachment count indicator in list view
+- `useSyncService` — detect which auth method is active (II vs username/password) and use the appropriate backend sync functions
+- `App.tsx` — wire `useUsernameAuth` into the migration/sync flow the same way II is wired
+- `LoginButton` — extend to show username login option alongside II
 
 ### Remove
-- Nothing removed; all existing storage keys, schema, hooks, and handlers are preserved exactly
+- Nothing
 
 ## Implementation Plan
-1. Keep all existing state, hooks (useRecords, useSpeechRecognition, useRecordImages), storage keys, and export/import logic unchanged
-2. Add `tag` field to new records (stored in localStorage under a separate `recordTagsById` key — no schema change to IndexedDB)
-3. Add `pinnedRecords` set in localStorage (`recordPinnedIds`) — no schema change
-4. Add multi-file attachment storage for records (same pattern as `routineMultiAttachmentsById`) under `recordMultiAttachmentsById` key
-5. Enhance the card list: group by date (timeline separators), show tag badge and pin icon, left color border by tag
-6. Upgrade view modal to max-w-4xl/90vh with full content, tag, datetime, files, images
-7. Add 3-option file picker (Camera/Gallery/Files) to add form using existing ImageUploadPicker or inline inputs
-8. Pin toggle button on each card
-9. Word count in textarea
-10. Validate, fix lint/type errors
+1. Extend `src/backend/main.mo` with user credential store and `registerUser`, `loginUser`, `resetPasswordWithRecovery`, `storeUserDataByKey`, `getUserDataByKey` functions
+2. Create `src/frontend/src/hooks/useUsernameAuth.ts` — manages register/login/logout/reset with localStorage session persistence
+3. Create `src/frontend/src/components/auth/UsernameAuthModal.tsx` — 3-panel modal: Login, Register, Forgot Password
+4. Update `src/frontend/src/components/auth/LoginButton.tsx` — show both II and username/password options
+5. Update `src/frontend/src/hooks/useSyncService.ts` — support syncing via userId key for username/password users
+6. Update `src/frontend/src/App.tsx` — hook up username auth migration/sync the same as II
